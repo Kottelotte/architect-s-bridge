@@ -132,13 +132,13 @@ const Index = () => {
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
+    s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
 
     const dir = npc.direction;
-    // Find tile position at NPC's feet
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
-    const npcCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    const footRow = Math.floor((npc.y + NPC_H - 1) / TILE);
+    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     let tilesPlaced = 0;
     const placeNext = () => {
@@ -147,7 +147,7 @@ const Index = () => {
         npc.isBuilding = false;
         return;
       }
-      const col = npcCol + dir * (tilesPlaced + 1);
+      const col = startCol + dir * (tilesPlaced + 1);
       const row = footRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
