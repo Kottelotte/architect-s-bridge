@@ -18,6 +18,7 @@ interface NPC {
   spawnDelayTimer: number;
 }
 
+
 // --- CONSTANTS ---
 const TILE = 24;
 const COLS = 32;
@@ -52,8 +53,8 @@ function createLevel(): number[][] {
 
   // Gap: cols 12-14 (3 tiles wide) — the architect must bridge this
 
-  // Small intermediate platform below spawn, above pit
-  for (let c = 9; c < 13; c++) map[17][c] = 1;
+
+
 
   // Floor platform right (exit side): cols 15-31, row 15
   for (let c = 15; c < COLS; c++) map[15][c] = 1;
@@ -101,6 +102,7 @@ const Index = () => {
     mouseY: number;
     hoveredNpcId: number | null;
     rescued: number;
+    pauseTimer: number;
   }>({
     map: createLevel(),
     npcs: [],
@@ -111,27 +113,32 @@ const Index = () => {
     mouseY: -1,
     hoveredNpcId: null,
     rescued: 0,
+    pauseTimer: 0,
   });
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
+    const hw = NPC_W * 2;
+    const hh = NPC_H * 2;
     for (let i = npcs.length - 1; i >= 0; i--) {
       const n = npcs[i];
       if (!n.isAlive || n.isRescued) continue;
-      if (x >= n.x && x <= n.x + NPC_W && y >= n.y && y <= n.y + NPC_H) return n;
+      const cx = n.x + NPC_W / 2;
+      const cy = n.y + NPC_H / 2;
+      if (x >= cx - hw / 2 && x <= cx + hw / 2 && y >= cy - hh / 2 && y <= cy + hh / 2) return n;
     }
     return null;
   }, []);
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
+    s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
 
     const dir = npc.direction;
-    // Find tile position at NPC's feet
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
-    const npcCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    const footRow = Math.floor((npc.y + NPC_H - 1) / TILE);
+    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     let tilesPlaced = 0;
     const placeNext = () => {
@@ -140,7 +147,7 @@ const Index = () => {
         npc.isBuilding = false;
         return;
       }
-      const col = npcCol + dir * (tilesPlaced + 1);
+      const col = startCol + dir * (tilesPlaced + 1);
       const row = footRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
@@ -219,6 +226,12 @@ const Index = () => {
 
       // Hover detection
       s.hoveredNpcId = getNpcAt(s.mouseX, s.mouseY)?.id ?? null;
+
+      // Global pause
+      if (s.pauseTimer > 0) {
+        s.pauseTimer -= dt;
+        return;
+      }
 
       // NPC update
       for (const npc of s.npcs) {
