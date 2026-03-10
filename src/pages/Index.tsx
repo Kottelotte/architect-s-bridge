@@ -118,10 +118,14 @@ const Index = () => {
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
+    const hw = NPC_W * 2;
+    const hh = NPC_H * 2;
     for (let i = npcs.length - 1; i >= 0; i--) {
       const n = npcs[i];
       if (!n.isAlive || n.isRescued) continue;
-      if (x >= n.x && x <= n.x + NPC_W && y >= n.y && y <= n.y + NPC_H) return n;
+      const cx = n.x + NPC_W / 2;
+      const cy = n.y + NPC_H / 2;
+      if (x >= cx - hw / 2 && x <= cx + hw / 2 && y >= cy - hh / 2 && y <= cy + hh / 2) return n;
     }
     return null;
   }, []);
