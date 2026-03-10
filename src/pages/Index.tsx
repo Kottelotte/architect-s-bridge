@@ -224,6 +224,12 @@ const Index = () => {
       for (const npc of s.npcs) {
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
 
+        // Spawn delay
+        if (npc.spawnDelayTimer > 0) {
+          npc.spawnDelayTimer -= dt;
+          continue;
+        }
+
         // Gravity
         npc.vy = Math.min(npc.vy + GRAVITY, MAX_FALL);
         npc.y += npc.vy;
