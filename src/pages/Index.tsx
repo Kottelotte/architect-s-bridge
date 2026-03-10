@@ -405,9 +405,6 @@ const Index = () => {
           className="border border-[#2a2a3a] cursor-crosshair"
           style={{ imageRendering: "pixelated" }}
         />
-        <p className="font-mono text-xs text-[#666688]">
-          Click the cyan NPC to activate the Architect ability
-        </p>
       </div>
     </div>
   );
