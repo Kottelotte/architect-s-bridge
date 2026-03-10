@@ -225,13 +225,18 @@ const Index = () => {
       }
 
       // Hover detection
-      s.hoveredNpcId = getNpcAt(s.mouseX, s.mouseY)?.id ?? null;
+      const hoveredNpc = getNpcAt(s.mouseX, s.mouseY);
+      s.hoveredNpcId = hoveredNpc?.id ?? null;
 
-      // Global pause
+      // Hover pause: freeze all movement when hovering unactivated architect
+      const hoverPause = hoveredNpc != null && hoveredNpc.role === "architect" && !hoveredNpc.roleActivated;
+
+      // Global pause (activation pause or hover pause)
       if (s.pauseTimer > 0) {
         s.pauseTimer -= dt;
         return;
       }
+      if (hoverPause) return;
 
       // NPC update
       for (const npc of s.npcs) {
