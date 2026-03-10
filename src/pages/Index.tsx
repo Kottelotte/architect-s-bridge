@@ -52,6 +52,9 @@ function createLevel(): number[][] {
 
   // Gap: cols 12-14 (3 tiles wide) — the architect must bridge this
 
+  // Small intermediate platform below spawn, above pit
+  for (let c = 9; c < 13; c++) map[17][c] = 1;
+
   // Floor platform right (exit side): cols 15-31, row 15
   for (let c = 15; c < COLS; c++) map[15][c] = 1;
   for (let r = 16; r < ROWS; r++) for (let c = 15; c < COLS; c++) map[r][c] = 1;
