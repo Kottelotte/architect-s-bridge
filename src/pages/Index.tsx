@@ -227,6 +227,12 @@ const Index = () => {
       // Hover detection
       s.hoveredNpcId = getNpcAt(s.mouseX, s.mouseY)?.id ?? null;
 
+      // Global pause
+      if (s.pauseTimer > 0) {
+        s.pauseTimer -= dt;
+        return;
+      }
+
       // NPC update
       for (const npc of s.npcs) {
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
