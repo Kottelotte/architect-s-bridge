@@ -15,6 +15,7 @@ interface NPC {
   isBuilding: boolean;
   glitchUntil: number;
   vy: number;
+  spawnDelayTimer: number;
 }
 
 // --- CONSTANTS ---
@@ -50,6 +51,9 @@ function createLevel(): number[][] {
   for (let r = 16; r < ROWS; r++) for (let c = 0; c < 12; c++) map[r][c] = 1;
 
   // Gap: cols 12-14 (3 tiles wide) — the architect must bridge this
+
+  // Small intermediate platform below spawn, above pit
+  for (let c = 9; c < 13; c++) map[17][c] = 1;
 
   // Floor platform right (exit side): cols 15-31, row 15
   for (let c = 15; c < COLS; c++) map[15][c] = 1;
@@ -197,6 +201,7 @@ const Index = () => {
       isBuilding: false,
       glitchUntil: 0,
       vy: 0,
+      spawnDelayTimer: 800,
     });
 
     const update = (dt: number) => {
@@ -218,6 +223,12 @@ const Index = () => {
       // NPC update
       for (const npc of s.npcs) {
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
+
+        // Spawn delay
+        if (npc.spawnDelayTimer > 0) {
+          npc.spawnDelayTimer -= dt;
+          continue;
+        }
 
         // Gravity
         npc.vy = Math.min(npc.vy + GRAVITY, MAX_FALL);
@@ -394,9 +405,6 @@ const Index = () => {
           className="border border-[#2a2a3a] cursor-crosshair"
           style={{ imageRendering: "pixelated" }}
         />
-        <p className="font-mono text-xs text-[#666688]">
-          Click the cyan NPC to activate the Architect ability
-        </p>
       </div>
     </div>
   );
