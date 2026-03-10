@@ -137,7 +137,7 @@ const Index = () => {
     npc.vy = 0;
 
     const dir = npc.direction;
-    const footRow = Math.floor((npc.y + NPC_H - 1) / TILE);
+    const footRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     let tilesPlaced = 0;
@@ -225,13 +225,18 @@ const Index = () => {
       }
 
       // Hover detection
-      s.hoveredNpcId = getNpcAt(s.mouseX, s.mouseY)?.id ?? null;
+      const hoveredNpc = getNpcAt(s.mouseX, s.mouseY);
+      s.hoveredNpcId = hoveredNpc?.id ?? null;
 
-      // Global pause
+      // Hover pause: freeze all movement when hovering unactivated architect
+      const hoverPause = hoveredNpc != null && hoveredNpc.role === "architect" && !hoveredNpc.roleActivated;
+
+      // Global pause (activation pause or hover pause)
       if (s.pauseTimer > 0) {
         s.pauseTimer -= dt;
         return;
       }
+      if (hoverPause) return;
 
       // NPC update
       for (const npc of s.npcs) {
@@ -330,11 +335,15 @@ const Index = () => {
 
         // Hover glow
         if (s.hoveredNpcId === npc.id && !isGlitching) {
-          ctx.shadowColor = npc.role === "architect" && !npc.roleActivated ? "#00ccff" : "#ffffff";
-          ctx.shadowBlur = 8;
-          ctx.strokeStyle = npc.role === "architect" && !npc.roleActivated ? "#00ccff" : "#aaaaaa";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(npc.x - 2, npc.y - 2, NPC_W + 4, NPC_H + 4);
+          const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
+          ctx.shadowColor = isArchitectReady ? "#00ccff" : "#ffffff";
+          ctx.shadowBlur = isArchitectReady ? 20 : 12;
+          ctx.strokeStyle = isArchitectReady ? "#00ccff" : "#aaaaaa";
+          ctx.lineWidth = isArchitectReady ? 2.5 : 2;
+          ctx.strokeRect(npc.x - 3, npc.y - 3, NPC_W + 6, NPC_H + 6);
+          if (isArchitectReady) {
+            ctx.strokeRect(npc.x - 5, npc.y - 5, NPC_W + 10, NPC_H + 10);
+          }
           ctx.shadowBlur = 0;
         }
 
