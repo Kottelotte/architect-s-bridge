@@ -15,6 +15,7 @@ interface NPC {
   isBuilding: boolean;
   glitchUntil: number;
   vy: number;
+  spawnDelayTimer: number;
 }
 
 // --- CONSTANTS ---
