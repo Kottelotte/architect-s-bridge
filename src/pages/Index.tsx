@@ -102,6 +102,7 @@ const Index = () => {
     mouseY: number;
     hoveredNpcId: number | null;
     rescued: number;
+    pauseTimer: number;
   }>({
     map: createLevel(),
     npcs: [],
@@ -112,6 +113,7 @@ const Index = () => {
     mouseY: -1,
     hoveredNpcId: null,
     rescued: 0,
+    pauseTimer: 0,
   });
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
