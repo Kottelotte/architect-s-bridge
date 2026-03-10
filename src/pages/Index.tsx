@@ -18,6 +18,7 @@ interface NPC {
   spawnDelayTimer: number;
 }
 
+
 // --- CONSTANTS ---
 const TILE = 24;
 const COLS = 32;
