@@ -201,6 +201,7 @@ const Index = () => {
       isBuilding: false,
       glitchUntil: 0,
       vy: 0,
+      spawnDelayTimer: 800,
     });
 
     const update = (dt: number) => {
