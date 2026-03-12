@@ -206,7 +206,7 @@ const Index = () => {
         id,
         x: s.spawnX,
         y: s.spawnY,
-        direction: 1,
+        direction: 1 as const,
         isAlive: true,
         isRescued: false,
         role,
@@ -218,7 +218,9 @@ const Index = () => {
         stopsMoving: false,
         isSolid: false,
         countsAsDead: false,
-        architectState: "idle",
+        architectState: "idle" as const,
+        deathPhase: "none" as const,
+        deathTimer: 0,
       };
     };
 
@@ -365,6 +367,25 @@ const Index = () => {
 
       // NPC update
       for (const npc of s.npcs) {
+        // Death animation update (runs even when "dead")
+        if (npc.deathPhase === "stasis") {
+          npc.deathTimer -= dt;
+          if (npc.deathTimer <= 0) {
+            npc.deathPhase = "dissolve";
+            npc.deathTimer = 700;
+          }
+          continue;
+        }
+        if (npc.deathPhase === "dissolve") {
+          npc.deathTimer -= dt;
+          if (npc.deathTimer <= 0) {
+            npc.isAlive = false;
+            npc.deathPhase = "none";
+            s.dead++;
+          }
+          continue;
+        }
+
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
         if (npc.stopsMoving) continue;
 
@@ -395,11 +416,13 @@ const Index = () => {
           }
         }
 
-        // Kill tile check
+        // Kill tile check — start death animation instead of instant death
         const killRow = Math.floor((npc.y + NPC_H) / TILE);
         if (isKill(s.map, footCol1, killRow) || isKill(s.map, footCol2, killRow)) {
-          npc.isAlive = false;
-          s.dead++;
+          npc.deathPhase = "stasis";
+          npc.deathTimer = 400;
+          npc.vy = 0;
+          npc.stopsMoving = true;
           continue;
         }
 
@@ -500,9 +523,46 @@ const Index = () => {
 
       // NPCs
       for (const npc of s.npcs) {
-        if (!npc.isAlive && !npc.countsAsDead) continue;
+        // Skip fully dead NPCs (not in death animation)
+        const inDeathAnim = npc.deathPhase === "stasis" || npc.deathPhase === "dissolve";
+        if (!inDeathAnim && !npc.isAlive && !npc.countsAsDead) continue;
         if (npc.isRescued) continue;
-        if (!npc.isAlive && !npc.isSolid) continue;
+        if (!inDeathAnim && !npc.isAlive && !npc.isSolid) continue;
+
+        // Death animation rendering
+        if (inDeathAnim) {
+          if (npc.deathPhase === "stasis") {
+            // Frozen NPC with red tint pulsing
+            const pulse = 0.6 + 0.4 * Math.sin(now / 80);
+            ctx.globalAlpha = pulse;
+            ctx.fillStyle = "#ff2222";
+            ctx.beginPath();
+            ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(npc.x + 3, npc.y + 8, NPC_W - 6, 8);
+            ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
+            ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
+            ctx.globalAlpha = 1;
+          } else {
+            // Dissolve: pixels break apart and fade
+            const progress = 1 - npc.deathTimer / 700; // 0→1
+            const alpha = 1 - progress;
+            for (let py = 0; py < NPC_H; py += 2) {
+              for (let px = 0; px < NPC_W; px += 2) {
+                if (Math.random() > alpha) continue; // skip more pixels as dissolve progresses
+                const scatter = progress * 8;
+                const dx = (Math.random() - 0.5) * scatter;
+                const dy = (Math.random() - 0.5) * scatter - progress * 6;
+                ctx.globalAlpha = alpha * (0.5 + Math.random() * 0.5);
+                const r = 200 + Math.floor(Math.random() * 55);
+                ctx.fillStyle = `rgb(${r},${Math.floor(r * 0.3)},${Math.floor(r * 0.2)})`;
+                ctx.fillRect(npc.x + px + dx, npc.y + py + dy, 2, 2);
+              }
+            }
+            ctx.globalAlpha = 1;
+          }
+          continue;
+        }
 
         const isGlitching = now < npc.glitchUntil;
 
