@@ -507,7 +507,8 @@ const Index = () => {
       for (let i = 0; i <= ultraSteps; i++) {
         const xr = i / ultraSteps;
         const x = W * xr + ultraParallax;
-        const y = ultraY
+        const tilt = (xr - 0.5) * 6; // subtle perspective tilt
+        const y = ultraY + tilt
           + 40 * Math.sin(xr * Math.PI * 0.8 + 0.2)
           + 15 * Math.sin(xr * Math.PI * 1.6 + 1.0)
           + 8 * Math.cos(xr * Math.PI * 2.4 + 0.5);
