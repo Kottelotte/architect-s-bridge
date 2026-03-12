@@ -641,7 +641,7 @@ const Index = () => {
       ctx.fillRect(W * 0.80 + parallaxMid, midTerrainY(0.80) - 4, 5, 4);
 
       // Near terrain silhouette — broken up with dips and undulations
-      ctx.fillStyle = "#080c18";
+      ctx.fillStyle = "#0e1120";
       ctx.beginPath();
       const nearBaseY = horizonY + 28;
       const nearSteps = 80;
