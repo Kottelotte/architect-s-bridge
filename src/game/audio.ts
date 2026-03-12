@@ -38,7 +38,7 @@ export function playBuildTick() {
   lp.Q.value = 4;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.18, ctx.currentTime);
+  gain.gain.setValueAtTime(0.25, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
   // Sum three filtered paths for layered metallic hit
@@ -74,7 +74,7 @@ export function playAnchorClick() {
   lp.Q.value = 8;
 
   const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.25, ctx.currentTime);
+  noiseGain.gain.setValueAtTime(0.6, ctx.currentTime);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
   noiseSrc.connect(lp).connect(noiseGain).connect(ctx.destination);
@@ -95,7 +95,7 @@ export function playAnchorClick() {
   clickBp.frequency.value = 400;
   clickBp.Q.value = 5;
   const clickGain = ctx.createGain();
-  clickGain.gain.setValueAtTime(0.18, ctx.currentTime);
+  clickGain.gain.setValueAtTime(0.45, ctx.currentTime);
   clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + clickDur);
   clickSrc.connect(clickBp).connect(clickGain).connect(ctx.destination);
   clickSrc.start();
@@ -165,7 +165,7 @@ export function startAmbientDrone() {
   const ctx = getCtx();
 
   ambientGain = ctx.createGain();
-  ambientGain.gain.value = 0.3;
+  ambientGain.gain.value = 0.45;
   ambientGain.connect(ctx.destination);
 
   // Layer 1: Filtered noise base with slow modulation (distant machinery)
