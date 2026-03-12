@@ -1,5 +1,7 @@
 export type Role = "none" | "architect" | "anchor" | "excavator" | "vessel";
 
+export type ArchitectState = "idle" | "armed" | "building";
+
 export interface NPC {
   id: number;
   x: number;
@@ -16,7 +18,7 @@ export interface NPC {
   stopsMoving: boolean;
   isSolid: boolean;
   countsAsDead: boolean;
-  architectArmed: boolean;
+  architectState: ArchitectState;
 }
 
 export interface LevelDef {

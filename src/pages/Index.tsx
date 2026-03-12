@@ -104,15 +104,10 @@ const Index = () => {
       return;
     }
 
-    if (gapDist <= 2) {
-      // Close enough — execute immediately
-      executeArchitectBuild(npc);
-    } else {
-      // Arm for auto-execution when closer
-      npc.architectArmed = true;
-      npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
-    }
-  }, []);
+    // Always arm — never build immediately on click
+    npc.architectState = "armed";
+    npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
+  }, [findGapDistance]);
 
   const executeArchitectBuild = useCallback((npc: NPC) => {
     const s = stateRef.current;
@@ -122,8 +117,8 @@ const Index = () => {
 
     s.pauseTimer = 400;
     npc.isBuilding = true;
+    npc.architectState = "building";
     npc.vy = 0;
-    npc.architectArmed = false;
     npc.roleActivated = true;
 
     let offset = 1;
@@ -213,7 +208,7 @@ const Index = () => {
         stopsMoving: false,
         isSolid: false,
         countsAsDead: false,
-        architectArmed: false,
+        architectState: "idle",
       };
     };
 
@@ -380,8 +375,8 @@ const Index = () => {
           npc.y = footRow * TILE - NPC_H;
           npc.vy = 0;
 
-          // Auto-execute armed architect when gap is within 1-2 tiles
-          if (npc.architectArmed && !npc.roleActivated && npc.role === "architect") {
+          // Auto-execute armed architect when gap is within 2 tiles
+          if (npc.architectState === "armed" && !npc.roleActivated && npc.role === "architect") {
             const gapDist = findGapDistance(npc, s.map, 2);
             if (gapDist >= 1 && gapDist <= 2) {
               executeArchitectBuild(npc);
