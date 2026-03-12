@@ -189,7 +189,12 @@ const Index = () => {
     };
 
     const startTransition = (s: GameState, fail = false) => {
-      s.transition = fail ? "fail_static" : "static1";
+      if (fail) {
+        s.transition = "fail_static";
+        s.failMessage = FAIL_MESSAGES[Math.floor(Math.random() * FAIL_MESSAGES.length)];
+      } else {
+        s.transition = "static1";
+      }
       s.transitionTimer = STATIC_DURATION;
       s.transitionText = "";
       s.transitionCharIndex = 0;
@@ -205,12 +210,12 @@ const Index = () => {
         s.transitionCharIndex = 0;
         s.transitionText = "";
       } else if (s.transition === "typewriter") {
-        if (s.transitionTimer <= 0 && s.transitionCharIndex < TRANSITION_TEXT.length) {
-          s.transitionText += TRANSITION_TEXT[s.transitionCharIndex];
+        const targetText = TRANSITION_TEXT;
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
           s.transitionTimer = TYPEWRITER_SPEED;
-        } else if (s.transitionCharIndex >= TRANSITION_TEXT.length) {
-          // Brief pause then static2
+        } else if (s.transitionCharIndex >= targetText.length) {
           s.transitionTimer -= dt;
           if (s.transitionTimer <= -400) {
             s.transition = "static2";
@@ -228,9 +233,27 @@ const Index = () => {
         s.transition = "none";
         s.inputDisabled = false;
       } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
+        s.transition = "fail_typewriter";
+        s.transitionTimer = TYPEWRITER_SPEED;
+        s.transitionCharIndex = 0;
+        s.transitionText = "";
+      } else if (s.transition === "fail_typewriter") {
+        const targetText = s.failMessage || FAIL_MESSAGES[0];
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED;
+        } else if (s.transitionCharIndex >= targetText.length) {
+          s.transitionTimer -= dt;
+          if (s.transitionTimer <= -400) {
+            s.transition = "fail_static2";
+            s.transitionTimer = STATIC_DURATION;
+          }
+        }
+      } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Reset to level 0
-        const ns = initState(0);
+        // Reload same level
+        const ns = initState(s.currentLevel);
         ns.lastTime = s.lastTime;
         Object.assign(s, ns);
         s.transition = "none";
