@@ -530,7 +530,8 @@ const Index = () => {
         const x = W * xr + massifParallax;
         // Bell-curve centered at 0.5 with gentle shoulders
         const bell = Math.exp(-Math.pow((xr - 0.5) / 0.28, 2));
-        const y = massifBaseY + 60 - 55 * bell
+        const tilt = (xr - 0.5) * 10; // slightly more tilt
+        const y = massifBaseY + tilt + 60 - 55 * bell
           + 6 * Math.sin(xr * Math.PI * 2.2 + 0.8);
         ctx.lineTo(x, y);
       }
