@@ -500,7 +500,7 @@ const Index = () => {
       // Ultra-far landmass — continental-scale ridge behind everything
       const ultraParallax = Math.sin(now / 90000) * 5;
       const ultraY = H * 0.38; // sits higher in the sky area
-      ctx.fillStyle = "rgba(44, 51, 70, 0.35)"; // #2c3346 at low opacity
+      ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
       ctx.beginPath();
       ctx.moveTo(-20, H);
       const ultraSteps = 60;
