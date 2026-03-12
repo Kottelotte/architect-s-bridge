@@ -375,8 +375,8 @@ const Index = () => {
           npc.y = footRow * TILE - NPC_H;
           npc.vy = 0;
 
-          // Auto-execute armed architect when gap is within 1-2 tiles
-          if (npc.architectArmed && !npc.roleActivated && npc.role === "architect") {
+          // Auto-execute armed architect when gap is within 2 tiles
+          if (npc.architectState === "armed" && !npc.roleActivated && npc.role === "architect") {
             const gapDist = findGapDistance(npc, s.map, 2);
             if (gapDist >= 1 && gapDist <= 2) {
               executeArchitectBuild(npc);
