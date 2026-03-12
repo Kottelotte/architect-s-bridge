@@ -401,6 +401,7 @@ const Index = () => {
             npc.isAlive = false;
             npc.deathPhase = "none";
             s.dead++;
+            globalMartyrsRef.current++;
           }
           continue;
         }
