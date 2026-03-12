@@ -534,9 +534,11 @@ const Index = () => {
           }
         } else {
           let bodyColor: string;
-          if (npc.role === "architect" && !npc.roleActivated) {
+          if (npc.role === "architect" && npc.architectState === "idle") {
             bodyColor = "#00ccff";
-          } else if (npc.role === "architect" && npc.roleActivated) {
+          } else if (npc.role === "architect" && npc.architectState === "armed") {
+            bodyColor = "#0099bb";
+          } else if (npc.role === "architect" && (npc.architectState === "building" || npc.architectState === "finished")) {
             bodyColor = "#006688";
           } else if (npc.role === "anchor" && !npc.roleActivated) {
             bodyColor = "#ff6600";

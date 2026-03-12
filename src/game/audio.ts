@@ -288,6 +288,7 @@ export function startAmbientDrone() {
 
   startNoiseBase();
   scheduleCrackle();
+  scheduleMidTexture();
   scheduleTick();
 }
 
