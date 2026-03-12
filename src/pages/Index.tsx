@@ -372,7 +372,7 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static") {
         drawStatic(ctx);
         return;
       }
