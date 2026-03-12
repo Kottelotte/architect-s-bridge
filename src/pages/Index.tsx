@@ -97,7 +97,7 @@ const Index = () => {
         return;
       }
       const col = startCol + dir * (tilesPlaced + 1);
-      const row = footRow;
+      const row = buildRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
         playBuildTick();
