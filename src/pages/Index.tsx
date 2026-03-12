@@ -499,7 +499,7 @@ const Index = () => {
 
       // Ultra-far landmass — continental-scale ridge behind everything
       const ultraParallax = Math.sin(now / 90000) * 5;
-      const ultraY = H * 0.38; // sits higher in the sky area
+      const ultraY = H * 0.30; // highest layer — most distant
       ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
       ctx.beginPath();
       ctx.moveTo(-20, H);
