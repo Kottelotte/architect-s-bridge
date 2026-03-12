@@ -535,7 +535,7 @@ const Index = () => {
       ctx.fillRect(0, horizonY - 8, W, 43);
 
       // Mid layer: darker terrain shapes + ruin fragments
-      ctx.fillStyle = "#0e1120";
+      ctx.fillStyle = "#111629";
       ctx.beginPath();
       ctx.moveTo(0, horizonY + 22);
       ctx.quadraticCurveTo(W * 0.18 + parallaxMid * 0.5, horizonY + 6, W * 0.3, horizonY + 18);
