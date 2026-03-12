@@ -395,14 +395,14 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2") {
         drawStatic(ctx);
         return;
       }
-      if (s.transition === "typewriter") {
+      if (s.transition === "typewriter" || s.transition === "fail_typewriter") {
         ctx.fillStyle = "#0a0a12";
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "#00ff88";
+        ctx.fillStyle = s.transition === "fail_typewriter" ? "#ff4444" : "#00ff88";
         ctx.font = "14px monospace";
         ctx.fillText(s.transitionText + (Math.floor(now / 300) % 2 === 0 ? "█" : ""), W / 2 - 160, H / 2);
         return;
