@@ -97,8 +97,8 @@ function createLevel1(): LevelDef {
   // Exit: col 3, row 16 (left of gap — NPCs cross Architect bridge, continue left to exit)
 
   const roles: Role[] = Array(12).fill("none") as Role[];
-  roles[1] = "architect";
-  roles[3] = "anchor";
+  roles[1] = "anchor";
+  roles[3] = "architect";
 
   return {
     map,
