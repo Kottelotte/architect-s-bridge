@@ -218,13 +218,21 @@ const Index = () => {
           }
         }
       } else if (s.transition === "static2" && s.transitionTimer <= 0) {
-        // Load next level
+        stopTransitionHum();
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
           const ns = initState(nextLevel);
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
         }
+        s.transition = "none";
+        s.inputDisabled = false;
+      } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
+        stopTransitionHum();
+        // Reset to level 0
+        const ns = initState(0);
+        ns.lastTime = s.lastTime;
+        Object.assign(s, ns);
         s.transition = "none";
         s.inputDisabled = false;
       }
