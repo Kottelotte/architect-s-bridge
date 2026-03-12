@@ -889,6 +889,7 @@ const Index = () => {
             let bodyColor = "#cccccc";
             if (npc.role === "architect") bodyColor = "#00ccff";
             else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
+            else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
             ctx.fillStyle = bodyColor;
             ctx.beginPath();
             ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
