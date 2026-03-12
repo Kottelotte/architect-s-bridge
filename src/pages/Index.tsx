@@ -77,8 +77,11 @@ const Index = () => {
     const footRow = Math.floor((npc.y + NPC_H) / TILE);
     const footCol1 = Math.floor(npc.x / TILE);
     const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
-    if (!isSolid(s.map, footCol1, footRow) && !isSolid(s.map, footCol2, footRow)) {
-      return; // mid-air, do nothing — don't consume ability
+    const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
+    if (!grounded) {
+      // Mid-air: flash glitch, do NOT consume ability
+      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      return;
     }
 
     // Check there is a gap within the next 2 tiles ahead before activating
@@ -94,7 +97,7 @@ const Index = () => {
       }
     }
     if (!hasGap) {
-      // Rejected: flash glitch and resume simulation
+      // Rejected: flash glitch and resume simulation, do NOT consume ability
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
       return;
     }
