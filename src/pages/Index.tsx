@@ -73,6 +73,7 @@ const Index = () => {
   const stateRef = useRef<GameState>(initState(0));
   const globalMartyrsRef = useRef<number>(0);
   const martyrPositionsRef = useRef<number[]>(generateMartyrPositions(50));
+  const survivorsRef = useRef<number>(TOTAL_NPCS);
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
