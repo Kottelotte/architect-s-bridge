@@ -375,13 +375,13 @@ const Index = () => {
         if (isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow)) {
           npc.y = footRow * TILE - NPC_H;
           npc.vy = 0;
+        }
 
-          // Auto-execute armed architect when gap is within 2 tiles
-          if (npc.architectState === "armed" && npc.role === "architect") {
-            const gapDist = findGapDistance(npc, s.map, 2);
-            if (gapDist >= 1 && gapDist <= 2) {
-              executeArchitectBuild(npc);
-            }
+        // Auto-execute armed architect when gap is within 2 tiles (checked every frame while grounded)
+        if (npc.architectState === "armed" && npc.role === "architect" && npc.vy === 0) {
+          const gapDist = findGapDistance(npc, s.map, 4);
+          if (gapDist >= 1 && gapDist <= 2) {
+            executeArchitectBuild(npc);
           }
         }
 
