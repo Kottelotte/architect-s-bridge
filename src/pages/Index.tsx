@@ -532,32 +532,39 @@ const Index = () => {
         // Death animation rendering
         if (inDeathAnim) {
           if (npc.deathPhase === "stasis") {
-            // Frozen NPC with red tint pulsing
-            const pulse = 0.6 + 0.4 * Math.sin(now / 80);
-            ctx.globalAlpha = pulse;
-            ctx.fillStyle = "#ff2222";
+            // Frozen NPC rendered normally (no red tint)
+            let bodyColor = "#cccccc";
+            if (npc.role === "architect") bodyColor = "#00ccff";
+            else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
+            ctx.fillStyle = bodyColor;
             ctx.beginPath();
             ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillRect(npc.x + 3, npc.y + 8, NPC_W - 6, 8);
             ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
             ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
-            ctx.globalAlpha = 1;
           } else {
-            // Dissolve: pixels break apart and fade
+            // Dissolve: dust particles drifting away
             const progress = 1 - npc.deathTimer / 700; // 0→1
-            const alpha = 1 - progress;
-            for (let py = 0; py < NPC_H; py += 2) {
-              for (let px = 0; px < NPC_W; px += 2) {
-                if (Math.random() > alpha) continue; // skip more pixels as dissolve progresses
-                const scatter = progress * 8;
-                const dx = (Math.random() - 0.5) * scatter;
-                const dy = (Math.random() - 0.5) * scatter - progress * 6;
-                ctx.globalAlpha = alpha * (0.5 + Math.random() * 0.5);
-                const r = 200 + Math.floor(Math.random() * 55);
-                ctx.fillStyle = `rgb(${r},${Math.floor(r * 0.3)},${Math.floor(r * 0.2)})`;
-                ctx.fillRect(npc.x + px + dx, npc.y + py + dy, 2, 2);
-              }
+            // Use seeded-ish particles based on npc.id for consistency
+            const particleCount = 24;
+            const seed = npc.id * 7;
+            for (let i = 0; i < particleCount; i++) {
+              // Deterministic pseudo-random per particle
+              const h = (seed + i * 137) % 256;
+              const srcX = (h % NPC_W);
+              const srcY = ((h * 3 + i * 11) % NPC_H);
+              // Drift direction: slightly upward and outward with gentle randomness
+              const angle = ((i / particleCount) * Math.PI * 2) + (h % 10) * 0.1;
+              const drift = progress * (3 + (h % 5));
+              const dx = Math.cos(angle) * drift;
+              const dy = -Math.abs(Math.sin(angle)) * drift - progress * 4;
+              const alpha = (1 - progress) * (1 - (i % 3) * 0.15);
+              if (alpha <= 0) continue;
+              ctx.globalAlpha = Math.max(0, alpha);
+              const brightness = 160 + (h % 80);
+              ctx.fillStyle = `rgb(${brightness},${Math.floor(brightness * 0.6)},${Math.floor(brightness * 0.5)})`;
+              ctx.fillRect(npc.x + srcX + dx, npc.y + srcY + dy, 1, 1);
             }
             ctx.globalAlpha = 1;
           }
