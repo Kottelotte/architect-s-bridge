@@ -541,23 +541,32 @@ const Index = () => {
 
       // Distant central hill — single large soft hill behind terrain
       const hillParallax = Math.sin(now / 80000) * 4;
-      const hillBaseY = H * 0.43; // overlaps massif, closer to horizon
-      ctx.fillStyle = "rgba(58, 65, 88, 0.22)";
+      const hillBaseY = H * 0.41; // raised slightly higher
+      ctx.fillStyle = "rgba(62, 70, 95, 0.28)"; // marginally lighter, more visible
       ctx.beginPath();
       ctx.moveTo(-20, H);
       const hillSteps = 50;
       for (let i = 0; i <= hillSteps; i++) {
         const xr = i / hillSteps;
         const x = W * xr + hillParallax;
-        const bell = Math.exp(-Math.pow((xr - 0.48) / 0.22, 2));
-        const tilt = (xr - 0.5) * 14; // more visible tilt for closer layer
-        const y = hillBaseY + tilt + 50 - 42 * bell
+        const bell = Math.exp(-Math.pow((xr - 0.48) / 0.26, 2)); // wider silhouette
+        const tilt = (xr - 0.5) * 14;
+        const y = hillBaseY + tilt + 50 - 52 * bell // taller peak
           + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
         ctx.lineTo(x, y);
       }
       ctx.lineTo(W + 20, H);
       ctx.closePath();
       ctx.fill();
+
+      // Atmospheric horizon haze — soft band above far terrain for depth
+      const hazeHorizonGrad = ctx.createLinearGradient(0, H * 0.38, 0, H * 0.54);
+      hazeHorizonGrad.addColorStop(0, "rgba(30, 34, 52, 0)");
+      hazeHorizonGrad.addColorStop(0.35, "rgba(38, 42, 58, 0.15)");
+      hazeHorizonGrad.addColorStop(0.6, "rgba(34, 38, 54, 0.12)");
+      hazeHorizonGrad.addColorStop(1, "rgba(14, 17, 32, 0)");
+      ctx.fillStyle = hazeHorizonGrad;
+      ctx.fillRect(0, H * 0.38, W, H * 0.16);
 
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
