@@ -51,9 +51,28 @@ function initState(levelIndex: number): GameState {
 }
 
 // --- COMPONENT ---
+// Martyr horizon visibility caps per level index
+const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3 };
+// Seeded pseudo-random positions for martyrs (asymmetric, clustered)
+function generateMartyrPositions(count: number): number[] {
+  const positions: number[] = [];
+  let seed = 7919;
+  const seededRand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
+  // Generate clustered, irregular positions in 0.1–0.9 range
+  const clusters = [0.2, 0.35, 0.55, 0.7, 0.85];
+  for (let i = 0; i < count; i++) {
+    const cluster = clusters[i % clusters.length];
+    const offset = (seededRand() - 0.5) * 0.12;
+    positions.push(Math.max(0.08, Math.min(0.92, cluster + offset + seededRand() * 0.04)));
+  }
+  return positions;
+}
+
 const Index = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(initState(0));
+  const globalMartyrsRef = useRef<number>(0);
+  const martyrPositionsRef = useRef<number[]>(generateMartyrPositions(50));
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
@@ -382,6 +401,7 @@ const Index = () => {
             npc.isAlive = false;
             npc.deathPhase = "none";
             s.dead++;
+            globalMartyrsRef.current++;
           }
           continue;
         }
@@ -519,7 +539,36 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
-      // Ultra-far landmass — continental-scale ridge behind everything
+      // --- Martyr Horizon: cruciform silhouettes on the mega-distant ridge ---
+      {
+        const cap = MARTYR_CAPS[s.currentLevel] ?? Infinity;
+        const visibleMartyrs = Math.min(globalMartyrsRef.current, cap);
+        const positions = martyrPositionsRef.current;
+        if (visibleMartyrs > 0) {
+          ctx.fillStyle = "rgba(55, 58, 72, 0.45)";
+          for (let mi = 0; mi < visibleMartyrs; mi++) {
+            const xr = positions[mi] ?? 0.5;
+            const mx = W * xr + megaParallax;
+            const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
+            const tilt = (xr - 0.5) * 4;
+            const ridgeY = megaBaseY + tilt + 80 - 70 * bell
+              + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
+              + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
+            const bodyH = 6;
+            const bodyW = 1.5;
+            const armW = 4;
+            const armH = 1;
+            const headR = 1;
+            const baseY = ridgeY - 1;
+            ctx.fillRect(mx - bodyW / 2, baseY - bodyH, bodyW, bodyH);
+            ctx.fillRect(mx - armW / 2, baseY - bodyH * 0.65, armW, armH);
+            ctx.beginPath();
+            ctx.arc(mx, baseY - bodyH - headR * 0.5, headR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
       const ultraParallax = Math.sin(now / 90000) * 5;
       const ultraY = H * 0.30; // highest layer — most distant
       ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
