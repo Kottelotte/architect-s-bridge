@@ -520,7 +520,7 @@ const Index = () => {
 
       // Distant central massif — large soft ridge behind terrain layers
       const massifParallax = Math.sin(now / 70000) * 6;
-      const massifBaseY = H * 0.42;
+      const massifBaseY = H * 0.36; // overlaps ridge, below it
       ctx.fillStyle = "rgba(38, 44, 58, 0.25)";
       ctx.beginPath();
       ctx.moveTo(-20, H);
