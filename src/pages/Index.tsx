@@ -104,15 +104,10 @@ const Index = () => {
       return;
     }
 
-    if (gapDist <= 2) {
-      // Close enough — execute immediately
-      executeArchitectBuild(npc);
-    } else {
-      // Arm for auto-execution when closer
-      npc.architectArmed = true;
-      npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
-    }
-  }, []);
+    // Always arm — never build immediately on click
+    npc.architectState = "armed";
+    npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
+  }, [findGapDistance]);
 
   const executeArchitectBuild = useCallback((npc: NPC) => {
     const s = stateRef.current;
@@ -122,8 +117,8 @@ const Index = () => {
 
     s.pauseTimer = 400;
     npc.isBuilding = true;
+    npc.architectState = "building";
     npc.vy = 0;
-    npc.architectArmed = false;
     npc.roleActivated = true;
 
     let offset = 1;
