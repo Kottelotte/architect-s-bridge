@@ -564,7 +564,7 @@ const Index = () => {
       // Distant central hill — single large soft hill behind terrain
       const hillParallax = Math.sin(now / 80000) * 4;
       const hillBaseY = H * 0.41; // raised slightly higher
-      ctx.fillStyle = "rgba(62, 70, 95, 0.28)"; // marginally lighter, more visible
+      ctx.fillStyle = "rgba(32, 38, 58, 0.38)"; // darkened for mid-distance depth
       ctx.beginPath();
       ctx.moveTo(-20, H);
       const hillSteps = 50;
