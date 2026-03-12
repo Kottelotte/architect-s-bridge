@@ -653,8 +653,8 @@ const Index = () => {
       ctx.fillRect(W * 0.78 + parallaxMid, midTerrainY(0.78), 10, 4);
       ctx.fillRect(W * 0.80 + parallaxMid, midTerrainY(0.80) - 4, 5, 4);
 
-      // Near terrain silhouette — broken up with dips and undulations
-      ctx.fillStyle = "#0e1120";
+      // Near terrain silhouette — softened to reduce visual weight
+      ctx.fillStyle = "#111525"; // slightly lighter to reduce contrast against ground
       ctx.beginPath();
       const nearBaseY = horizonY + 28;
       const nearSteps = 80;
@@ -663,10 +663,10 @@ const Index = () => {
         const xr = i / nearSteps;
         const x = W * xr + parallaxNear * 0.2;
         const y = nearBaseY
-          + 10 * Math.sin(xr * Math.PI * 3.2 + 0.7)
-          - 6 * Math.cos(xr * Math.PI * 5.1 + 1.3)
-          + 4 * Math.sin(xr * Math.PI * 8.0 + 2.0)
-          - 3 * Math.cos(xr * Math.PI * 12.0 + 0.4);
+          + 8 * Math.sin(xr * Math.PI * 3.2 + 0.7) // softened amplitudes
+          - 5 * Math.cos(xr * Math.PI * 5.1 + 1.3)
+          + 3 * Math.sin(xr * Math.PI * 8.0 + 2.0)
+          - 2 * Math.cos(xr * Math.PI * 12.0 + 0.4);
         ctx.lineTo(x, y);
       }
       ctx.lineTo(W + 5, H);
