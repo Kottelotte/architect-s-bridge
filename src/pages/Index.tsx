@@ -1,82 +1,11 @@
 import { useEffect, useRef, useCallback } from "react";
-
-// --- TYPES ---
-type Role = "none" | "architect" | "anchor" | "excavator" | "vessel";
-
-interface NPC {
-  id: number;
-  x: number;
-  y: number;
-  direction: 1 | -1;
-  isAlive: boolean;
-  isRescued: boolean;
-  role: Role;
-  roleActivated: boolean;
-  isBuilding: boolean;
-  glitchUntil: number;
-  vy: number;
-  spawnDelayTimer: number;
-}
-
-
-// --- CONSTANTS ---
-const TILE = 24;
-const COLS = 32;
-const ROWS = 20;
-const W = COLS * TILE;
-const H = ROWS * TILE;
-const NPC_W = 14;
-const NPC_H = 20;
-const SPEED = 1.2;
-const GRAVITY = 0.5;
-const MAX_FALL = 6;
-const SPAWN_INTERVAL = 1000;
-const TOTAL_NPC = 12;
-const BRIDGE_TILES = 3;
-const BRIDGE_DELAY = 80;
-const GLITCH_DURATION = 250;
-
-// --- LEVEL 1 MAP ---
-function createLevel(): number[][] {
-  const map: number[][] = [];
-  for (let r = 0; r < ROWS; r++) {
-    map[r] = [];
-    for (let c = 0; c < COLS; c++) {
-      map[r][c] = 0;
-    }
-  }
-
-  // Floor platform left (spawn side): cols 0-11, row 15
-  for (let c = 0; c < 12; c++) map[15][c] = 1;
-  // Fill below floor
-  for (let r = 16; r < ROWS; r++) for (let c = 0; c < 12; c++) map[r][c] = 1;
-
-  // Gap: cols 12-14 (3 tiles wide) — the architect must bridge this
-
-
-
-
-  // Floor platform right (exit side): cols 15-31, row 15
-  for (let c = 15; c < COLS; c++) map[15][c] = 1;
-  for (let r = 16; r < ROWS; r++) for (let c = 15; c < COLS; c++) map[r][c] = 1;
-
-  // Walls
-  for (let r = 0; r < ROWS; r++) {
-    map[r][0] = 1;
-    map[r][COLS - 1] = 1;
-  }
-
-  // Pit bottom so fallen NPCs die
-  for (let c = 12; c < 15; c++) map[ROWS - 1][c] = 2; // 2 = kill tile
-
-  return map;
-}
-
-// --- EXIT ---
-const EXIT_COL = 28;
-const EXIT_ROW = 14; // one tile above floor on right side
-const SPAWN_X = 3 * TILE;
-const SPAWN_Y = 14 * TILE - NPC_H;
+import type { NPC, GameState, TransitionPhase } from "../game/types";
+import {
+  TILE, COLS, ROWS, W, H, NPC_W, NPC_H, SPEED, GRAVITY, MAX_FALL,
+  SPAWN_INTERVAL, BRIDGE_TILES, BRIDGE_DELAY, GLITCH_DURATION,
+  ANCHOR_PUSH, TYPEWRITER_SPEED, STATIC_DURATION, TRANSITION_TEXT,
+} from "../game/constants";
+import { LEVELS, cloneLevelMap } from "../game/levels";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -89,22 +18,10 @@ function isKill(map: number[][], col: number, row: number): boolean {
   return map[row][col] === 2;
 }
 
-// --- COMPONENT ---
-const Index = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<{
-    map: number[][];
-    npcs: NPC[];
-    spawnTimer: number;
-    spawnCount: number;
-    lastTime: number;
-    mouseX: number;
-    mouseY: number;
-    hoveredNpcId: number | null;
-    rescued: number;
-    pauseTimer: number;
-  }>({
-    map: createLevel(),
+function initState(levelIndex: number): GameState {
+  const level = LEVELS[levelIndex];
+  return {
+    map: cloneLevelMap(level),
     npcs: [],
     spawnTimer: 0,
     spawnCount: 0,
@@ -113,8 +30,27 @@ const Index = () => {
     mouseY: -1,
     hoveredNpcId: null,
     rescued: 0,
+    dead: 0,
     pauseTimer: 0,
-  });
+    currentLevel: levelIndex,
+    exitCol: level.exitCol,
+    exitRow: level.exitRow,
+    spawnX: level.spawnX,
+    spawnY: level.spawnY,
+    totalNpc: level.totalNpc,
+    roles: level.roles,
+    transition: "none",
+    transitionTimer: 0,
+    transitionText: "",
+    transitionCharIndex: 0,
+    inputDisabled: false,
+  };
+}
+
+// --- COMPONENT ---
+const Index = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef<GameState>(initState(0));
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
@@ -123,6 +59,7 @@ const Index = () => {
     for (let i = npcs.length - 1; i >= 0; i--) {
       const n = npcs[i];
       if (!n.isAlive || n.isRescued) continue;
+      if (n.countsAsDead) continue;
       const cx = n.x + NPC_W / 2;
       const cy = n.y + NPC_H / 2;
       if (x >= cx - hw / 2 && x <= cx + hw / 2 && y >= cy - hh / 2 && y <= cy + hh / 2) return n;
@@ -158,7 +95,19 @@ const Index = () => {
     setTimeout(placeNext, BRIDGE_DELAY);
   }, []);
 
+  const activateAnchor = useCallback((npc: NPC) => {
+    const s = stateRef.current;
+    s.pauseTimer = 400;
+    npc.glitchUntil = performance.now() + GLITCH_DURATION;
+    npc.roleActivated = true;
+    npc.stopsMoving = true;
+    npc.isSolid = true;
+    npc.countsAsDead = true;
+  }, []);
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const s = stateRef.current;
+    if (s.inputDisabled) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -173,12 +122,13 @@ const Index = () => {
     if (!npc.roleActivated && npc.role !== "none") {
       if (npc.role === "architect") {
         activateArchitect(npc);
+      } else if (npc.role === "anchor") {
+        activateAnchor(npc);
       }
     } else {
-      // Glitch
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
-  }, [getNpcAt, activateArchitect]);
+  }, [getNpcAt, activateArchitect, activateAnchor]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -196,30 +146,100 @@ const Index = () => {
     const ctx = canvas.getContext("2d")!;
     let animId: number;
 
-    const spawnNpc = (id: number): NPC => ({
-      id,
-      x: SPAWN_X,
-      y: SPAWN_Y,
-      direction: 1,
-      isAlive: true,
-      isRescued: false,
-      role: id === 0 ? "architect" : "none",
-      roleActivated: false,
-      isBuilding: false,
-      glitchUntil: 0,
-      vy: 0,
-      spawnDelayTimer: 800,
-    });
+    const spawnNpc = (id: number, s: GameState): NPC => {
+      const role = s.roles[id] ?? "none";
+      return {
+        id,
+        x: s.spawnX,
+        y: s.spawnY,
+        direction: 1,
+        isAlive: true,
+        isRescued: false,
+        role,
+        roleActivated: false,
+        isBuilding: false,
+        glitchUntil: 0,
+        vy: 0,
+        spawnDelayTimer: 800,
+        stopsMoving: false,
+        isSolid: false,
+        countsAsDead: false,
+      };
+    };
+
+    // Check if NPC collides with any solid anchor
+    const collidesWithAnchor = (npc: NPC, nx: number, s: GameState): NPC | null => {
+      for (const other of s.npcs) {
+        if (other.id === npc.id || !other.isAlive || !other.isSolid) continue;
+        // AABB overlap
+        if (
+          nx < other.x + NPC_W &&
+          nx + NPC_W > other.x &&
+          npc.y < other.y + NPC_H &&
+          npc.y + NPC_H > other.y
+        ) {
+          return other;
+        }
+      }
+      return null;
+    };
+
+    const startTransition = (s: GameState) => {
+      s.transition = "static1";
+      s.transitionTimer = STATIC_DURATION;
+      s.transitionText = "";
+      s.transitionCharIndex = 0;
+      s.inputDisabled = true;
+    };
+
+    const updateTransition = (dt: number, s: GameState) => {
+      s.transitionTimer -= dt;
+      if (s.transition === "static1" && s.transitionTimer <= 0) {
+        s.transition = "typewriter";
+        s.transitionTimer = TYPEWRITER_SPEED;
+        s.transitionCharIndex = 0;
+        s.transitionText = "";
+      } else if (s.transition === "typewriter") {
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < TRANSITION_TEXT.length) {
+          s.transitionText += TRANSITION_TEXT[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED;
+        } else if (s.transitionCharIndex >= TRANSITION_TEXT.length) {
+          // Brief pause then static2
+          s.transitionTimer -= dt;
+          if (s.transitionTimer <= -400) {
+            s.transition = "static2";
+            s.transitionTimer = STATIC_DURATION;
+          }
+        }
+      } else if (s.transition === "static2" && s.transitionTimer <= 0) {
+        // Load next level
+        const nextLevel = s.currentLevel + 1;
+        if (nextLevel < LEVELS.length) {
+          const ns = initState(nextLevel);
+          ns.lastTime = s.lastTime;
+          Object.assign(s, ns);
+        }
+        s.transition = "none";
+        s.inputDisabled = false;
+      }
+    };
 
     const update = (dt: number) => {
       const s = stateRef.current;
 
+      // Transition
+      if (s.transition !== "none") {
+        updateTransition(dt, s);
+        return;
+      }
+
       // Spawning
-      if (s.spawnCount < TOTAL_NPC) {
+      if (s.spawnCount < s.totalNpc) {
         s.spawnTimer += dt;
         if (s.spawnTimer >= SPAWN_INTERVAL) {
           s.spawnTimer -= SPAWN_INTERVAL;
-          s.npcs.push(spawnNpc(s.spawnCount));
+          s.npcs.push(spawnNpc(s.spawnCount, s));
           s.spawnCount++;
         }
       }
@@ -228,21 +248,33 @@ const Index = () => {
       const hoveredNpc = getNpcAt(s.mouseX, s.mouseY);
       s.hoveredNpcId = hoveredNpc?.id ?? null;
 
-      // Hover pause: freeze all movement when hovering unactivated architect
-      const hoverPause = hoveredNpc != null && hoveredNpc.role === "architect" && !hoveredNpc.roleActivated;
+      // Hover pause for unactivated role NPCs
+      const hoverPause = hoveredNpc != null &&
+        (hoveredNpc.role === "architect" || hoveredNpc.role === "anchor") &&
+        !hoveredNpc.roleActivated;
 
-      // Global pause (activation pause or hover pause)
       if (s.pauseTimer > 0) {
         s.pauseTimer -= dt;
         return;
       }
       if (hoverPause) return;
 
+      // Check level complete
+      if (s.spawnCount >= s.totalNpc) {
+        const allResolved = s.npcs.every(
+          (n) => n.isRescued || !n.isAlive || n.countsAsDead
+        );
+        if (allResolved && s.transition === "none") {
+          startTransition(s);
+          return;
+        }
+      }
+
       // NPC update
       for (const npc of s.npcs) {
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
+        if (npc.stopsMoving) continue;
 
-        // Spawn delay
         if (npc.spawnDelayTimer > 0) {
           npc.spawnDelayTimer -= dt;
           continue;
@@ -266,6 +298,7 @@ const Index = () => {
         const killRow = Math.floor((npc.y + NPC_H) / TILE);
         if (isKill(s.map, footCol1, killRow) || isKill(s.map, footCol2, killRow)) {
           npc.isAlive = false;
+          s.dead++;
           continue;
         }
 
@@ -277,18 +310,41 @@ const Index = () => {
           ? Math.floor((nx + NPC_W) / TILE)
           : Math.floor(nx / TILE);
 
+        // Wall collision
         if (isSolid(s.map, checkCol, headRow) || isSolid(s.map, checkCol, midRow)) {
           npc.direction = (npc.direction * -1) as 1 | -1;
         } else {
-          npc.x = nx;
+          // Check anchor collision
+          const anchor = collidesWithAnchor(npc, nx, s);
+          if (anchor) {
+            npc.direction = (npc.direction * -1) as 1 | -1;
+            // Push away from anchor
+            if (npc.x < anchor.x) {
+              npc.x -= ANCHOR_PUSH;
+            } else {
+              npc.x += ANCHOR_PUSH;
+            }
+          } else {
+            npc.x = nx;
+          }
         }
 
         // Exit check
         const npcCenterCol = Math.floor((npc.x + NPC_W / 2) / TILE);
         const npcRow = Math.floor((npc.y + NPC_H / 2) / TILE);
-        if (npcCenterCol === EXIT_COL && npcRow === EXIT_ROW) {
+        if (npcCenterCol === s.exitCol && npcRow === s.exitRow) {
           npc.isRescued = true;
           s.rescued++;
+        }
+      }
+    };
+
+    const drawStatic = (ctx: CanvasRenderingContext2D) => {
+      for (let y = 0; y < H; y += 4) {
+        for (let x = 0; x < W; x += 4) {
+          const v = Math.random() * 100;
+          ctx.fillStyle = `rgb(${v},${v},${v})`;
+          ctx.fillRect(x, y, 4, 4);
         }
       }
     };
@@ -296,6 +352,20 @@ const Index = () => {
     const draw = (now: number) => {
       const s = stateRef.current;
       ctx.clearRect(0, 0, W, H);
+
+      // Transition rendering
+      if (s.transition === "static1" || s.transition === "static2") {
+        drawStatic(ctx);
+        return;
+      }
+      if (s.transition === "typewriter") {
+        ctx.fillStyle = "#0a0a12";
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#00ff88";
+        ctx.font = "14px monospace";
+        ctx.fillText(s.transitionText + (Math.floor(now / 300) % 2 === 0 ? "█" : ""), W / 2 - 160, H / 2);
+        return;
+      }
 
       // Background
       ctx.fillStyle = "#0a0a12";
@@ -321,34 +391,37 @@ const Index = () => {
       // Exit
       ctx.fillStyle = "#00ff88";
       ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now / 300);
-      ctx.fillRect(EXIT_COL * TILE + 2, EXIT_ROW * TILE + 2, TILE - 4, TILE - 4);
+      ctx.fillRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
       ctx.globalAlpha = 1;
       ctx.strokeStyle = "#00ff88";
       ctx.lineWidth = 1;
-      ctx.strokeRect(EXIT_COL * TILE + 2, EXIT_ROW * TILE + 2, TILE - 4, TILE - 4);
+      ctx.strokeRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
 
       // NPCs
       for (const npc of s.npcs) {
-        if (!npc.isAlive || npc.isRescued) continue;
+        if (!npc.isAlive && !npc.countsAsDead) continue;
+        if (npc.isRescued) continue;
+        if (!npc.isAlive && !npc.isSolid) continue;
 
         const isGlitching = now < npc.glitchUntil;
 
         // Hover glow
         if (s.hoveredNpcId === npc.id && !isGlitching) {
+          const isRoleReady = !npc.roleActivated && npc.role !== "none";
           const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
-          ctx.shadowColor = isArchitectReady ? "#00ccff" : "#ffffff";
-          ctx.shadowBlur = isArchitectReady ? 20 : 12;
-          ctx.strokeStyle = isArchitectReady ? "#00ccff" : "#aaaaaa";
-          ctx.lineWidth = isArchitectReady ? 2.5 : 2;
+          const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
+          ctx.shadowColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
+          ctx.shadowBlur = isRoleReady ? 20 : 12;
+          ctx.strokeStyle = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#aaaaaa";
+          ctx.lineWidth = isRoleReady ? 2.5 : 2;
           ctx.strokeRect(npc.x - 3, npc.y - 3, NPC_W + 6, NPC_H + 6);
-          if (isArchitectReady) {
+          if (isRoleReady) {
             ctx.strokeRect(npc.x - 5, npc.y - 5, NPC_W + 10, NPC_H + 10);
           }
           ctx.shadowBlur = 0;
         }
 
         if (isGlitching) {
-          // Static noise effect
           for (let py = 0; py < NPC_H; py += 2) {
             for (let px = 0; px < NPC_W; px += 2) {
               const v = Math.random() * 255;
@@ -357,17 +430,20 @@ const Index = () => {
             }
           }
         } else {
-          // Body
           let bodyColor: string;
           if (npc.role === "architect" && !npc.roleActivated) {
             bodyColor = "#00ccff";
           } else if (npc.role === "architect" && npc.roleActivated) {
             bodyColor = "#006688";
+          } else if (npc.role === "anchor" && !npc.roleActivated) {
+            bodyColor = "#ff6600";
+          } else if (npc.role === "anchor" && npc.roleActivated) {
+            // Anchored: darker, stationary look
+            bodyColor = "#884400";
           } else {
             bodyColor = "#cccccc";
           }
 
-          // Simple humanoid shape
           ctx.fillStyle = bodyColor;
           // Head
           ctx.beginPath();
@@ -379,10 +455,24 @@ const Index = () => {
           ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
           ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
 
-          // Direction indicator
-          ctx.fillStyle = "#ffffff";
-          const eyeX = npc.x + NPC_W / 2 + npc.direction * 2;
-          ctx.fillRect(eyeX - 1, npc.y + 3, 2, 2);
+          // Anchor activated: draw X on body
+          if (npc.role === "anchor" && npc.roleActivated) {
+            ctx.strokeStyle = "#ffaa00";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(npc.x + 3, npc.y + 8);
+            ctx.lineTo(npc.x + NPC_W - 3, npc.y + 16);
+            ctx.moveTo(npc.x + NPC_W - 3, npc.y + 8);
+            ctx.lineTo(npc.x + 3, npc.y + 16);
+            ctx.stroke();
+          }
+
+          // Direction indicator (not for anchored)
+          if (!npc.stopsMoving) {
+            ctx.fillStyle = "#ffffff";
+            const eyeX = npc.x + NPC_W / 2 + npc.direction * 2;
+            ctx.fillRect(eyeX - 1, npc.y + 3, 2, 2);
+          }
 
           // Building indicator
           if (npc.isBuilding) {
@@ -397,8 +487,9 @@ const Index = () => {
       // HUD
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${TOTAL_NPC}`, 8, 14);
-      ctx.fillText(`Spawned: ${s.npcs.length} / ${TOTAL_NPC}`, 8, 28);
+      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
+      const levelLabel = s.currentLevel === 0 ? "TUTORIAL" : `LEVEL ${s.currentLevel}`;
+      ctx.fillText(levelLabel, W - 120, 14);
     };
 
     const loop = (time: number) => {
