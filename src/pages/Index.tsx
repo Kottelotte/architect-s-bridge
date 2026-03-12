@@ -1033,6 +1033,19 @@ const Index = () => {
             ctx.stroke();
           }
 
+          // Excavator activated: draw downward arrow on body
+          if (npc.role === "excavator" && npc.roleActivated) {
+            ctx.strokeStyle = "#ffee00";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(npc.x + NPC_W / 2, npc.y + 8);
+            ctx.lineTo(npc.x + NPC_W / 2, npc.y + 16);
+            ctx.moveTo(npc.x + NPC_W / 2 - 2, npc.y + 14);
+            ctx.lineTo(npc.x + NPC_W / 2, npc.y + 16);
+            ctx.lineTo(npc.x + NPC_W / 2 + 2, npc.y + 14);
+            ctx.stroke();
+          }
+
           // Direction indicator (not for anchored)
           if (!npc.stopsMoving) {
             ctx.fillStyle = "#ffffff";
