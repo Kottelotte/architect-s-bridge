@@ -587,6 +587,22 @@ const Index = () => {
             ctx.globalAlpha = 1;
           }
         }
+
+        // DEBUG: display info above architect NPCs
+        if (npc.role === "architect" && npc.isAlive && !npc.isRescued) {
+          const gapDist = findGapDistance(npc, s.map, 4);
+          const vx = npc.stopsMoving ? 0 : npc.direction * SPEED;
+          ctx.font = "8px monospace";
+          ctx.fillStyle = "#ffff00";
+          ctx.globalAlpha = 0.9;
+          const lx = npc.x - 20;
+          let ly = npc.y - 38;
+          ctx.fillText(`st:${npc.architectState}`, lx, ly); ly += 9;
+          ctx.fillText(`gap:${gapDist}`, lx, ly); ly += 9;
+          ctx.fillText(`bld:${npc.isBuilding}`, lx, ly); ly += 9;
+          ctx.fillText(`spd:${SPEED} vx:${vx.toFixed(1)}`, lx, ly);
+          ctx.globalAlpha = 1;
+        }
       }
 
       // HUD
