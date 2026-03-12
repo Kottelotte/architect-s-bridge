@@ -500,7 +500,7 @@ const Index = () => {
       // Mega-distant ridge — furthest visible landform, behind all other layers
       const megaParallax = Math.sin(now / 120000) * 3;
       const megaBaseY = H * 0.22; // high on screen — very distant
-      ctx.fillStyle = "rgba(72, 78, 100, 0.22)"; // lighter, atmospheric fade
+      ctx.fillStyle = "rgba(82, 88, 112, 0.32)"; // brighter for clear sky contrast
       ctx.beginPath();
       ctx.moveTo(-20, H);
       const megaSteps = 70;
