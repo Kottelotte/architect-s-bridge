@@ -550,7 +550,8 @@ const Index = () => {
         const xr = i / hillSteps;
         const x = W * xr + hillParallax;
         const bell = Math.exp(-Math.pow((xr - 0.48) / 0.22, 2));
-        const y = hillBaseY + 50 - 42 * bell
+        const tilt = (xr - 0.5) * 14; // more visible tilt for closer layer
+        const y = hillBaseY + tilt + 50 - 42 * bell
           + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
         ctx.lineTo(x, y);
       }
