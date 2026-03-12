@@ -4,8 +4,10 @@ import {
   TILE, COLS, ROWS, W, H, NPC_W, NPC_H, SPEED, GRAVITY, MAX_FALL,
   SPAWN_INTERVAL, BRIDGE_TILES, BRIDGE_DELAY, GLITCH_DURATION,
   ANCHOR_PUSH, TYPEWRITER_SPEED, STATIC_DURATION, TRANSITION_TEXT,
+  TOTAL_NPCS,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
+import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -37,7 +39,7 @@ function initState(levelIndex: number): GameState {
     exitRow: level.exitRow,
     spawnX: level.spawnX,
     spawnY: level.spawnY,
-    totalNpc: level.totalNpc,
+    totalNpc: TOTAL_NPCS,
     roles: level.roles,
     transition: "none",
     transitionTimer: 0,
@@ -88,6 +90,7 @@ const Index = () => {
       const row = footRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
+        playBuildTick();
       }
       tilesPlaced++;
       setTimeout(placeNext, BRIDGE_DELAY);
@@ -103,6 +106,7 @@ const Index = () => {
     npc.stopsMoving = true;
     npc.isSolid = true;
     npc.countsAsDead = true;
+    playAnchorClick();
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -184,12 +188,13 @@ const Index = () => {
       return null;
     };
 
-    const startTransition = (s: GameState) => {
-      s.transition = "static1";
+    const startTransition = (s: GameState, fail = false) => {
+      s.transition = fail ? "fail_static" : "static1";
       s.transitionTimer = STATIC_DURATION;
       s.transitionText = "";
       s.transitionCharIndex = 0;
       s.inputDisabled = true;
+      startTransitionHum();
     };
 
     const updateTransition = (dt: number, s: GameState) => {
@@ -213,13 +218,21 @@ const Index = () => {
           }
         }
       } else if (s.transition === "static2" && s.transitionTimer <= 0) {
-        // Load next level
+        stopTransitionHum();
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
           const ns = initState(nextLevel);
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
         }
+        s.transition = "none";
+        s.inputDisabled = false;
+      } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
+        stopTransitionHum();
+        // Reset to level 0
+        const ns = initState(0);
+        ns.lastTime = s.lastTime;
+        Object.assign(s, ns);
         s.transition = "none";
         s.inputDisabled = false;
       }
@@ -259,13 +272,18 @@ const Index = () => {
       }
       if (hoverPause) return;
 
-      // Check level complete
+      // Check level complete or fail
       if (s.spawnCount >= s.totalNpc) {
         const allResolved = s.npcs.every(
           (n) => n.isRescued || !n.isAlive || n.countsAsDead
         );
         if (allResolved && s.transition === "none") {
-          startTransition(s);
+          const anyRescued = s.npcs.some((n) => n.isRescued);
+          if (!anyRescued) {
+            startTransition(s, true);
+          } else {
+            startTransition(s);
+          }
           return;
         }
       }
@@ -354,7 +372,7 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static") {
         drawStatic(ctx);
         return;
       }
@@ -487,9 +505,7 @@ const Index = () => {
       // HUD
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
-      const levelLabel = s.currentLevel === 0 ? "TUTORIAL" : `LEVEL ${s.currentLevel}`;
-      ctx.fillText(levelLabel, W - 120, 14);
+      ctx.fillText(`Rescued: ${s.rescued} / ${TOTAL_NPCS}`, 8, 14);
     };
 
     const loop = (time: number) => {

@@ -24,7 +24,6 @@ export interface LevelDef {
   exitRow: number;
   spawnX: number;
   spawnY: number;
-  totalNpc: number;
   roles: Role[];
 }
 
@@ -33,6 +32,7 @@ export type TransitionPhase =
   | "static1"
   | "typewriter"
   | "static2"
+  | "fail_static"
   | "done";
 
 export interface GameState {

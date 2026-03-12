@@ -16,3 +16,4 @@ export const ANCHOR_PUSH = 3;
 export const TYPEWRITER_SPEED = 40;
 export const STATIC_DURATION = 600;
 export const TRANSITION_TEXT = "STRUCTURAL CHANGE REGISTERED";
+export const TOTAL_NPCS = 12;
