@@ -496,100 +496,142 @@ const Index = () => {
       ctx.fillRect(0, 0, W, H);
 
       // --- Distant horizon landscape ---
-      const horizonY = H * 0.65;
+      const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
       const parallaxMid = Math.sin(now / 40000) * 16;
       const parallaxNear = Math.sin(now / 25000) * 24;
 
+      // Helper: get terrain Y at a given X ratio (0-1) for far layer
+      const farTerrainY = (xRatio: number): number => {
+        // Rolling hills with varied elevation
+        return horizonY
+          - 30 * Math.sin(xRatio * Math.PI * 1.2)
+          - 18 * Math.sin(xRatio * Math.PI * 2.8 + 0.5)
+          - 8 * Math.cos(xRatio * Math.PI * 4.5 + 1.2);
+      };
+
+      // Helper: get terrain Y for mid layer (slightly lower)
+      const midTerrainY = (xRatio: number): number => {
+        return horizonY + 12
+          - 22 * Math.sin(xRatio * Math.PI * 1.5 + 0.3)
+          - 12 * Math.sin(xRatio * Math.PI * 3.2 + 1.0)
+          - 6 * Math.cos(xRatio * Math.PI * 5.0 + 0.8);
+      };
+
       // Far layer: eroded hills — lightest tone for distance
       ctx.fillStyle = "#1f2638";
       ctx.beginPath();
-      ctx.moveTo(0, horizonY + 18 + parallaxFar * 0.2);
-      ctx.quadraticCurveTo(W * 0.1 + parallaxFar, horizonY - 14, W * 0.22, horizonY + 8);
-      ctx.quadraticCurveTo(W * 0.32 + parallaxFar * 0.5, horizonY - 6, W * 0.42, horizonY + 12);
-      ctx.quadraticCurveTo(W * 0.55 + parallaxFar * 0.3, horizonY + 2, W * 0.65, horizonY + 16);
-      ctx.quadraticCurveTo(W * 0.78 + parallaxFar * 0.4, horizonY - 10, W * 0.9, horizonY + 10);
-      ctx.quadraticCurveTo(W * 0.96 + parallaxFar * 0.2, horizonY + 20, W, horizonY + 14);
+      const farSteps = 40;
+      ctx.moveTo(0, farTerrainY(0) + parallaxFar * 0.2);
+      for (let i = 1; i <= farSteps; i++) {
+        const xr = i / farSteps;
+        ctx.lineTo(W * xr + parallaxFar * (0.2 + 0.1 * Math.sin(xr * 3)), farTerrainY(xr) + parallaxFar * 0.15);
+      }
       ctx.lineTo(W, H);
       ctx.lineTo(0, H);
       ctx.closePath();
       ctx.fill();
 
       // Garnet atmospheric band at horizon
-      const garnetGrad = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 50);
+      const garnetGrad = ctx.createLinearGradient(0, horizonY - 30, 0, horizonY + 60);
       garnetGrad.addColorStop(0, "rgba(10, 10, 18, 0)");
-      garnetGrad.addColorStop(0.3, "rgba(42, 10, 13, 0.4)");
-      garnetGrad.addColorStop(0.5, "rgba(42, 10, 13, 0.3)");
-      garnetGrad.addColorStop(0.7, "rgba(42, 10, 13, 0.15)");
+      garnetGrad.addColorStop(0.25, "rgba(42, 10, 13, 0.35)");
+      garnetGrad.addColorStop(0.5, "rgba(42, 10, 13, 0.25)");
+      garnetGrad.addColorStop(0.75, "rgba(42, 10, 13, 0.1)");
       garnetGrad.addColorStop(1, "rgba(10, 10, 18, 0)");
       ctx.fillStyle = garnetGrad;
-      ctx.fillRect(0, horizonY - 20, W, 70);
+      ctx.fillRect(0, horizonY - 30, W, 90);
 
       // Atmospheric depth haze
-      const hazeGrad = ctx.createLinearGradient(0, horizonY - 8, 0, horizonY + 35);
+      const hazeGrad = ctx.createLinearGradient(0, horizonY - 12, 0, horizonY + 40);
       hazeGrad.addColorStop(0, "rgba(14, 18, 30, 0)");
-      hazeGrad.addColorStop(0.5, "rgba(14, 18, 30, 0.3)");
+      hazeGrad.addColorStop(0.5, "rgba(14, 18, 30, 0.25)");
       hazeGrad.addColorStop(1, "rgba(10, 10, 18, 0)");
       ctx.fillStyle = hazeGrad;
-      ctx.fillRect(0, horizonY - 8, W, 43);
+      ctx.fillRect(0, horizonY - 12, W, 52);
 
       // Mid layer: darker terrain shapes + ruin fragments
       ctx.fillStyle = "#111629";
       ctx.beginPath();
-      ctx.moveTo(0, horizonY + 22);
-      ctx.quadraticCurveTo(W * 0.18 + parallaxMid * 0.5, horizonY + 6, W * 0.3, horizonY + 18);
-      ctx.quadraticCurveTo(W * 0.5 + parallaxMid * 0.3, horizonY + 10, W * 0.7, horizonY + 20);
-      ctx.quadraticCurveTo(W * 0.85 + parallaxMid * 0.4, horizonY + 8, W, horizonY + 16);
+      const midSteps = 40;
+      ctx.moveTo(0, midTerrainY(0) + parallaxMid * 0.1);
+      for (let i = 1; i <= midSteps; i++) {
+        const xr = i / midSteps;
+        ctx.lineTo(W * xr + parallaxMid * (0.15 + 0.1 * Math.sin(xr * 2.5)), midTerrainY(xr) + parallaxMid * 0.08);
+      }
       ctx.lineTo(W, H);
       ctx.lineTo(0, H);
       ctx.closePath();
       ctx.fill();
 
-      // Mid ruin fragments
+      // Mid ruin fragments — placed on mid terrain
       ctx.fillStyle = "#0a0e1a";
       const mx1 = W * 0.22 + parallaxMid;
-      ctx.fillRect(mx1, horizonY - 10, 4, 16);
-      ctx.fillRect(mx1 - 2, horizonY - 6, 8, 3);
+      const my1 = midTerrainY(0.22);
+      ctx.fillRect(mx1, my1 - 14, 4, 18);
+      ctx.fillRect(mx1 - 2, my1 - 8, 8, 3);
       ctx.save();
-      ctx.translate(W * 0.55 + parallaxMid, horizonY);
+      const mx2x = 0.55;
+      ctx.translate(W * mx2x + parallaxMid, midTerrainY(mx2x));
       ctx.rotate(-0.12);
-      ctx.fillRect(0, -14, 3, 14);
+      ctx.fillRect(0, -18, 3, 18);
       ctx.restore();
-      ctx.fillRect(W * 0.78 + parallaxMid, horizonY + 2, 10, 4);
-      ctx.fillRect(W * 0.80 + parallaxMid, horizonY - 2, 5, 4);
+      ctx.fillRect(W * 0.78 + parallaxMid, midTerrainY(0.78), 10, 4);
+      ctx.fillRect(W * 0.80 + parallaxMid, midTerrainY(0.80) - 4, 5, 4);
 
-      // Near layer: large monolith silhouettes — darkest
+      // Near terrain silhouette (subtle, just adds ground variation for monoliths)
+      ctx.fillStyle = "#080c18";
+      ctx.beginPath();
+      const nearBaseY = horizonY + 28;
+      ctx.moveTo(0, nearBaseY + 6);
+      ctx.quadraticCurveTo(W * 0.08 + parallaxNear * 0.3, nearBaseY - 4, W * 0.15, nearBaseY + 2);
+      ctx.quadraticCurveTo(W * 0.25 + parallaxNear * 0.2, nearBaseY - 8, W * 0.38, nearBaseY + 4);
+      ctx.quadraticCurveTo(W * 0.5 + parallaxNear * 0.15, nearBaseY - 2, W * 0.62, nearBaseY + 6);
+      ctx.quadraticCurveTo(W * 0.75 + parallaxNear * 0.25, nearBaseY - 6, W * 0.87, nearBaseY + 2);
+      ctx.quadraticCurveTo(W * 0.95, nearBaseY - 3, W, nearBaseY + 4);
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fill();
+
+      // Near layer: large monolith silhouettes — darkest, placed on terrain
       ctx.fillStyle = "#050710";
 
-      // Monolith 1: tall leaning slab (left)
+      // Monolith 1: tall leaning slab (left) — on mid terrain slope
+      const m1x = 0.12;
+      const m1baseY = midTerrainY(m1x) + 4;
       ctx.save();
-      ctx.translate(W * 0.12 + parallaxNear, horizonY + 10);
+      ctx.translate(W * m1x + parallaxNear, m1baseY);
       ctx.rotate(-0.05);
-      ctx.fillRect(0, -90, 10, 90);
-      ctx.fillRect(-3, -94, 16, 6);
-      ctx.fillRect(-1, -70, 12, 3);
+      ctx.fillRect(0, -110, 12, 110);
+      ctx.fillRect(-3, -116, 18, 7);
+      ctx.fillRect(-1, -85, 14, 3);
       ctx.restore();
 
-      // Monolith 2: broken pillar (center-right)
+      // Monolith 2: broken pillar (center-right) — on terrain
+      const m2x = 0.65;
+      const m2baseY = midTerrainY(m2x) + 2;
       ctx.save();
-      ctx.translate(W * 0.65 + parallaxNear, horizonY + 8);
+      ctx.translate(W * m2x + parallaxNear, m2baseY);
       ctx.rotate(0.03);
-      ctx.fillRect(0, -72, 12, 72);
-      ctx.fillRect(-2, -78, 6, 8);
-      ctx.fillRect(8, -76, 4, 6);
-      ctx.fillRect(2, -82, 5, 5);
+      ctx.fillRect(0, -95, 14, 95);
+      ctx.fillRect(-2, -102, 7, 9);
+      ctx.fillRect(9, -100, 5, 7);
+      ctx.fillRect(2, -108, 6, 7);
       ctx.restore();
 
-      // Monolith 3: half-collapsed wall (far right)
+      // Monolith 3: half-collapsed wall (far right) — on terrain
+      const m3x = 0.88;
+      const m3baseY = midTerrainY(m3x);
       ctx.save();
-      ctx.translate(W * 0.88 + parallaxNear, horizonY + 6);
+      ctx.translate(W * m3x + parallaxNear, m3baseY);
       ctx.rotate(0.06);
-      ctx.fillRect(0, -50, 20, 50);
-      ctx.fillRect(20, -32, 6, 32);
-      ctx.fillRect(-4, -38, 4, 38);
+      ctx.fillRect(0, -65, 22, 65);
+      ctx.fillRect(22, -42, 7, 42);
+      ctx.fillRect(-4, -48, 4, 48);
       ctx.fillStyle = "#0a0a12";
-      ctx.fillRect(5, -36, 10, 12);
+      ctx.fillRect(5, -46, 12, 14);
       ctx.restore();
 
       // --- End horizon landscape ---
