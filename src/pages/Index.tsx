@@ -72,12 +72,21 @@ const Index = () => {
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
+
+    // Architect can only build when grounded
+    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const footCol1 = Math.floor(npc.x / TILE);
+    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+    if (!isSolid(s.map, footCol1, footRow) && !isSolid(s.map, footCol2, footRow)) {
+      return; // mid-air, do nothing
+    }
+
     s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
 
     const dir = npc.direction;
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     let tilesPlaced = 0;
@@ -88,7 +97,7 @@ const Index = () => {
         return;
       }
       const col = startCol + dir * (tilesPlaced + 1);
-      const row = footRow;
+      const row = buildRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
         playBuildTick();
