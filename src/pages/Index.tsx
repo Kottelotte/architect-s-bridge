@@ -89,20 +89,19 @@ const Index = () => {
     const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
-    let tilesPlaced = 0;
+    let offset = 1;
     const placeNext = () => {
-      if (tilesPlaced >= BRIDGE_TILES) {
+      const col = startCol + dir * offset;
+      const row = buildRow;
+      // Stop if out of bounds or hit a solid tile
+      if (col < 0 || col >= COLS || row < 0 || row >= ROWS || isSolid(s.map, col, row)) {
         npc.roleActivated = true;
         npc.isBuilding = false;
         return;
       }
-      const col = startCol + dir * (tilesPlaced + 1);
-      const row = buildRow;
-      if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-        s.map[row][col] = 1;
-        playBuildTick();
-      }
-      tilesPlaced++;
+      s.map[row][col] = 1;
+      playBuildTick();
+      offset++;
       setTimeout(placeNext, BRIDGE_DELAY);
     };
     setTimeout(placeNext, BRIDGE_DELAY);
