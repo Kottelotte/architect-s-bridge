@@ -507,7 +507,8 @@ const Index = () => {
       for (let i = 0; i <= ultraSteps; i++) {
         const xr = i / ultraSteps;
         const x = W * xr + ultraParallax;
-        const y = ultraY
+        const tilt = (xr - 0.5) * 6; // subtle perspective tilt
+        const y = ultraY + tilt
           + 40 * Math.sin(xr * Math.PI * 0.8 + 0.2)
           + 15 * Math.sin(xr * Math.PI * 1.6 + 1.0)
           + 8 * Math.cos(xr * Math.PI * 2.4 + 0.5);
@@ -529,7 +530,8 @@ const Index = () => {
         const x = W * xr + massifParallax;
         // Bell-curve centered at 0.5 with gentle shoulders
         const bell = Math.exp(-Math.pow((xr - 0.5) / 0.28, 2));
-        const y = massifBaseY + 60 - 55 * bell
+        const tilt = (xr - 0.5) * 10; // slightly more tilt
+        const y = massifBaseY + tilt + 60 - 55 * bell
           + 6 * Math.sin(xr * Math.PI * 2.2 + 0.8);
         ctx.lineTo(x, y);
       }
@@ -548,7 +550,8 @@ const Index = () => {
         const xr = i / hillSteps;
         const x = W * xr + hillParallax;
         const bell = Math.exp(-Math.pow((xr - 0.48) / 0.22, 2));
-        const y = hillBaseY + 50 - 42 * bell
+        const tilt = (xr - 0.5) * 14; // more visible tilt for closer layer
+        const y = hillBaseY + tilt + 50 - 42 * bell
           + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
         ctx.lineTo(x, y);
       }
@@ -565,7 +568,8 @@ const Index = () => {
       // Helper: get terrain Y at a given X ratio (0-1) for far layer
       const farTerrainY = (xRatio: number): number => {
         // Rolling hills with varied elevation
-        return horizonY
+        const tilt = (xRatio - 0.5) * 18; // progressive tilt for far terrain
+        return horizonY + tilt
           - 30 * Math.sin(xRatio * Math.PI * 1.2)
           - 18 * Math.sin(xRatio * Math.PI * 2.8 + 0.5)
           - 8 * Math.cos(xRatio * Math.PI * 4.5 + 1.2);
