@@ -247,10 +247,19 @@ const Index = () => {
       return;
     }
 
+    if (npc.role === "excavator") {
+      if (!npc.roleActivated) {
+        activateExcavator(npc);
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
     if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
-  }, [getNpcAt, activateArchitect, activateAnchor]);
+  }, [getNpcAt, activateArchitect, activateAnchor, activateExcavator]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
