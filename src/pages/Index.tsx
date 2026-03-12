@@ -539,7 +539,36 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
-      // Ultra-far landmass — continental-scale ridge behind everything
+      // --- Martyr Horizon: cruciform silhouettes on the mega-distant ridge ---
+      {
+        const cap = MARTYR_CAPS[s.currentLevel] ?? Infinity;
+        const visibleMartyrs = Math.min(globalMartyrsRef.current, cap);
+        const positions = martyrPositionsRef.current;
+        if (visibleMartyrs > 0) {
+          ctx.fillStyle = "rgba(55, 58, 72, 0.45)";
+          for (let mi = 0; mi < visibleMartyrs; mi++) {
+            const xr = positions[mi] ?? 0.5;
+            const mx = W * xr + megaParallax;
+            const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
+            const tilt = (xr - 0.5) * 4;
+            const ridgeY = megaBaseY + tilt + 80 - 70 * bell
+              + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
+              + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
+            const bodyH = 6;
+            const bodyW = 1.5;
+            const armW = 4;
+            const armH = 1;
+            const headR = 1;
+            const baseY = ridgeY - 1;
+            ctx.fillRect(mx - bodyW / 2, baseY - bodyH, bodyW, bodyH);
+            ctx.fillRect(mx - armW / 2, baseY - bodyH * 0.65, armW, armH);
+            ctx.beginPath();
+            ctx.arc(mx, baseY - bodyH - headR * 0.5, headR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
       const ultraParallax = Math.sin(now / 90000) * 5;
       const ultraY = H * 0.30; // highest layer — most distant
       ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
