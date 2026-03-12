@@ -166,6 +166,54 @@ const Index = () => {
     playAnchorClick();
   }, []);
 
+  const activateExcavator = useCallback((npc: NPC) => {
+    const s = stateRef.current;
+    // Must be grounded
+    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const footCol1 = Math.floor(npc.x / TILE);
+    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+    const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
+    if (!grounded) {
+      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      return;
+    }
+
+    s.pauseTimer = Number.POSITIVE_INFINITY;
+    npc.roleActivated = true;
+    npc.stopsMoving = true;
+    npc.isBuilding = true;
+    npc.countsAsDead = true;
+    npc.glitchUntil = performance.now() + GLITCH_DURATION;
+    playAnchorClick();
+
+    const digCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    const startRow = footRow; // row below NPC's feet
+    let depth = 0;
+
+    const digNext = () => {
+      const row = startRow + depth;
+      if (depth >= EXCAVATE_DEPTH || row >= ROWS) {
+        npc.isBuilding = false;
+        s.pauseTimer = 0;
+        return;
+      }
+      // Dig this tile and adjacent tile for 2-wide shaft
+      if (row >= 0 && row < ROWS) {
+        if (digCol >= 0 && digCol < COLS && s.map[row][digCol] === 1) {
+          s.map[row][digCol] = 0;
+        }
+        const adjCol = digCol + 1;
+        if (adjCol >= 0 && adjCol < COLS && s.map[row][adjCol] === 1) {
+          s.map[row][adjCol] = 0;
+        }
+      }
+      playBuildTick();
+      depth++;
+      setTimeout(digNext, EXCAVATE_DELAY);
+    };
+    setTimeout(digNext, EXCAVATE_DELAY);
+  }, []);
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     startAmbientDrone();
     const s = stateRef.current;
