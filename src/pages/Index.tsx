@@ -500,7 +500,7 @@ const Index = () => {
       // Ultra-far landmass — continental-scale ridge behind everything
       const ultraParallax = Math.sin(now / 90000) * 5;
       const ultraY = H * 0.38; // sits higher in the sky area
-      ctx.fillStyle = "rgba(44, 51, 70, 0.35)"; // #2c3346 at low opacity
+      ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
       ctx.beginPath();
       ctx.moveTo(-20, H);
       const ultraSteps = 60;
@@ -537,6 +537,25 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
+      // Distant central hill — single large soft hill behind terrain
+      const hillParallax = Math.sin(now / 80000) * 4;
+      const hillBaseY = H * 0.44;
+      ctx.fillStyle = "rgba(58, 65, 88, 0.22)";
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const hillSteps = 50;
+      for (let i = 0; i <= hillSteps; i++) {
+        const xr = i / hillSteps;
+        const x = W * xr + hillParallax;
+        const bell = Math.exp(-Math.pow((xr - 0.48) / 0.22, 2));
+        const y = hillBaseY + 50 - 42 * bell
+          + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
+
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
@@ -560,8 +579,8 @@ const Index = () => {
           - 6 * Math.cos(xRatio * Math.PI * 5.0 + 0.8);
       };
 
-      // Far layer: eroded hills — lightest tone for distance
-      ctx.fillStyle = "#1f2638";
+      // Far layer: eroded hills — lighter tone for distance
+      ctx.fillStyle = "#23283a";
       ctx.beginPath();
       const farSteps = 40;
       ctx.moveTo(0, farTerrainY(0) + parallaxFar * 0.2);
@@ -593,7 +612,7 @@ const Index = () => {
       ctx.fillRect(0, horizonY - 12, W, 52);
 
       // Mid layer: darker terrain shapes + ruin fragments
-      ctx.fillStyle = "#111629";
+      ctx.fillStyle = "#181d2e";
       ctx.beginPath();
       const midSteps = 40;
       ctx.moveTo(0, midTerrainY(0) + parallaxMid * 0.1);
@@ -622,7 +641,7 @@ const Index = () => {
       ctx.fillRect(W * 0.80 + parallaxMid, midTerrainY(0.80) - 4, 5, 4);
 
       // Near terrain silhouette — broken up with dips and undulations
-      ctx.fillStyle = "#080c18";
+      ctx.fillStyle = "#0e1120";
       ctx.beginPath();
       const nearBaseY = horizonY + 28;
       const nearSteps = 80;
