@@ -102,12 +102,22 @@ const Index = () => {
     const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
+    // Find the first gap tile to start building from
+    let gapStart = 1;
+    for (let look = 1; look <= 4; look++) {
+      const checkCol = startCol + dir * look;
+      if (checkCol >= 0 && checkCol < COLS && !isSolid(s.map, checkCol, buildRow)) {
+        gapStart = look;
+        break;
+      }
+    }
+
     s.pauseTimer = Number.POSITIVE_INFINITY;
     npc.isBuilding = true;
     npc.architectState = "building";
     npc.vy = 0;
 
-    let offset = 1;
+    let offset = gapStart;
     const placeNext = () => {
       const col = startCol + dir * offset;
       const row = buildRow;
