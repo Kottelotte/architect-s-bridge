@@ -151,13 +151,25 @@ const Index = () => {
     const npc = getNpcAt(mx, my);
     if (!npc) return;
 
-    if (!npc.roleActivated && npc.role !== "none") {
-      if (npc.role === "architect") {
-        activateArchitect(npc);
-      } else if (npc.role === "anchor") {
-        activateAnchor(npc);
+    if (npc.role === "architect") {
+      if (npc.architectState === "building" || npc.architectState === "finished") {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+        return;
       }
-    } else {
+      activateArchitect(npc);
+      return;
+    }
+
+    if (npc.role === "anchor") {
+      if (!npc.roleActivated) {
+        activateAnchor(npc);
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
+    if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
   }, [getNpcAt, activateArchitect, activateAnchor]);
