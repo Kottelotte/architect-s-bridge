@@ -7,7 +7,7 @@ import {
   TOTAL_NPCS, FAIL_MESSAGES,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
-import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum } from "../game/audio";
+import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -111,6 +111,7 @@ const Index = () => {
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    startAmbientDrone();
     const s = stateRef.current;
     if (s.inputDisabled) return;
     const canvas = canvasRef.current;

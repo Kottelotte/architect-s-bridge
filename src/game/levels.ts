@@ -35,7 +35,9 @@ function createTutorial(): LevelDef {
   // Kill tiles at pit bottom
   for (let c = 12; c < 15; c++) map[ROWS - 1][c] = 2;
 
-  const roles: Role[] = ["architect"];
+  // Deterministic roles: NPC 0 = architect, rest = none
+  const roles: Role[] = Array(12).fill("none") as Role[];
+  roles[0] = "architect";
 
   return {
     map,
@@ -47,9 +49,9 @@ function createTutorial(): LevelDef {
   };
 }
 
-// Level 1: Anchor + Architect required
-// Flow: spawn upper-left → fall to middle platform → walk right into wall →
-// Anchor redirects left → gap needs Architect bridge → exit on far side
+// Level 1: Cascading platforms, Anchor + Architect required
+// Flow: spawn upper-left → fall to platform A → fall to platform B → main floor →
+// walk right into wall → Anchor redirects left → gap needs Architect bridge → exit
 function createLevel1(): LevelDef {
   const map = emptyMap();
 
@@ -59,47 +61,51 @@ function createLevel1(): LevelDef {
     map[r][COLS - 1] = 1;
   }
 
-  // Spawn platform upper-left: cols 1-5, row 6
-  for (let c = 1; c <= 5; c++) map[6][c] = 1;
+  // Spawn platform upper-left: cols 1-5, row 4
+  for (let c = 1; c <= 5; c++) map[4][c] = 1;
 
-  // Main middle platform: cols 1-22, row 14
-  // NPCs fall from spawn onto this
-  for (let c = 1; c <= 22; c++) map[14][c] = 1;
+  // Platform A: cols 8-14, row 8 (NPCs fall right from spawn)
+  for (let c = 8; c <= 14; c++) map[8][c] = 1;
 
-  // Vertical wall at col 22, rows 10-13 — blocks NPCs walking right
-  for (let r = 10; r < 14; r++) map[r][22] = 1;
+  // Platform B: cols 3-9, row 12 (NPCs fall left from A)
+  for (let c = 3; c <= 9; c++) map[12][c] = 1;
 
-  // After being redirected left by Anchor, NPCs walk left toward gap
-  // Gap in middle platform: cols 8-10 (3 tiles wide, needs Architect)
-  for (let c = 8; c <= 10; c++) map[14][c] = 0;
+  // Main floor: cols 1-24, row 17
+  for (let c = 1; c <= 24; c++) map[17][c] = 1;
 
-  // Exit platform left of gap: cols 1-7, row 14 already placed
-  // But exit is on the LEFT side past the gap
+  // Vertical wall at col 24, rows 13-16 — blocks NPCs walking right
+  for (let r = 13; r < 17; r++) map[r][24] = 1;
 
-  // Exit platform: cols 1-7 already have floor at row 14
-  // Place exit at col 3, row 13
-  
-  // Fill below platforms
-  for (let r = 15; r < ROWS; r++) {
+  // After Anchor redirects left, NPCs walk toward gap
+  // Gap in main floor: cols 11-13 (3 tiles wide, needs Architect)
+  for (let c = 11; c <= 13; c++) map[17][c] = 0;
+
+  // Exit platform left of gap: cols 1-10 already have floor at row 17
+  // Exit at col 3, row 16
+
+  // Fill below main floor
+  for (let r = 18; r < ROWS; r++) {
     for (let c = 1; c < COLS - 1; c++) map[r][c] = 1;
   }
 
-  // Clear the gap pit: cols 8-10
-  for (let r = 15; r < ROWS - 1; r++) {
-    for (let c = 8; c <= 10; c++) map[r][c] = 0;
+  // Clear the gap pit: cols 11-13
+  for (let r = 18; r < ROWS - 1; r++) {
+    for (let c = 11; c <= 13; c++) map[r][c] = 0;
   }
   // Kill tiles at gap bottom
-  for (let c = 8; c <= 10; c++) map[ROWS - 1][c] = 2;
+  for (let c = 11; c <= 13; c++) map[ROWS - 1][c] = 2;
 
-  // Roles: anchor first (NPC id 0), architect second (NPC id 1)
-  const roles: Role[] = ["anchor", "architect"];
+  // Deterministic roles: NPC 1 = architect, NPC 3 = anchor
+  const roles: Role[] = Array(12).fill("none") as Role[];
+  roles[1] = "architect";
+  roles[3] = "anchor";
 
   return {
     map,
     exitCol: 3,
-    exitRow: 13,
+    exitRow: 16,
     spawnX: 2 * TILE,
-    spawnY: 5 * TILE - NPC_H,
+    spawnY: 3 * TILE - NPC_H,
     roles,
   };
 }
