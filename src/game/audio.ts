@@ -165,7 +165,7 @@ export function startAmbientDrone() {
   const ctx = getCtx();
 
   ambientGain = ctx.createGain();
-  ambientGain.gain.value = 1.25;
+  ambientGain.gain.value = 1.55;
   ambientGain.connect(ctx.destination);
 
   // Layer 1: Filtered noise base with slow modulation (distant machinery)
