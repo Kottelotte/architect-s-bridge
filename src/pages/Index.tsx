@@ -503,7 +503,7 @@ const Index = () => {
       const parallaxNear = Math.sin(now / 25000) * 24;
 
       // Far layer: eroded hills — lightest tone for distance
-      ctx.fillStyle = "#141828";
+      ctx.fillStyle = "#1f2638";
       ctx.beginPath();
       ctx.moveTo(0, horizonY + 18 + parallaxFar * 0.2);
       ctx.quadraticCurveTo(W * 0.1 + parallaxFar, horizonY - 14, W * 0.22, horizonY + 8);
@@ -519,9 +519,9 @@ const Index = () => {
       // Garnet atmospheric band at horizon
       const garnetGrad = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 50);
       garnetGrad.addColorStop(0, "rgba(10, 10, 18, 0)");
-      garnetGrad.addColorStop(0.3, "rgba(20, 5, 7, 0.35)");
-      garnetGrad.addColorStop(0.5, "rgba(26, 6, 8, 0.25)");
-      garnetGrad.addColorStop(0.7, "rgba(20, 5, 7, 0.15)");
+      garnetGrad.addColorStop(0.3, "rgba(42, 10, 13, 0.4)");
+      garnetGrad.addColorStop(0.5, "rgba(42, 10, 13, 0.3)");
+      garnetGrad.addColorStop(0.7, "rgba(42, 10, 13, 0.15)");
       garnetGrad.addColorStop(1, "rgba(10, 10, 18, 0)");
       ctx.fillStyle = garnetGrad;
       ctx.fillRect(0, horizonY - 20, W, 70);
@@ -535,7 +535,7 @@ const Index = () => {
       ctx.fillRect(0, horizonY - 8, W, 43);
 
       // Mid layer: darker terrain shapes + ruin fragments
-      ctx.fillStyle = "#0e1120";
+      ctx.fillStyle = "#111629";
       ctx.beginPath();
       ctx.moveTo(0, horizonY + 22);
       ctx.quadraticCurveTo(W * 0.18 + parallaxMid * 0.5, horizonY + 6, W * 0.3, horizonY + 18);
