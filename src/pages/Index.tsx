@@ -568,7 +568,8 @@ const Index = () => {
       // Helper: get terrain Y at a given X ratio (0-1) for far layer
       const farTerrainY = (xRatio: number): number => {
         // Rolling hills with varied elevation
-        return horizonY
+        const tilt = (xRatio - 0.5) * 18; // progressive tilt for far terrain
+        return horizonY + tilt
           - 30 * Math.sin(xRatio * Math.PI * 1.2)
           - 18 * Math.sin(xRatio * Math.PI * 2.8 + 0.5)
           - 8 * Math.cos(xRatio * Math.PI * 4.5 + 1.2);
