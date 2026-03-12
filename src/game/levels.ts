@@ -49,52 +49,31 @@ function createTutorial(): LevelDef {
 }
 
 // Level 1: Anchor + Architect required
-// Flow: NPCs cascade down platforms → land on floor → walk right → floor ends
-// (open pit on right) → Anchor needed to redirect left → gap on left needs Architect → exit
 function createLevel1(): LevelDef {
   const map = emptyMap();
 
-  // Side walls (left only — right side is open pit)
   for (let r = 0; r < ROWS; r++) {
     map[r][0] = 1;
   }
 
-  // Spawn platform upper-left: cols 1-6, row 4
   for (let c = 1; c <= 6; c++) map[4][c] = 1;
-
-  // Platform A: cols 10-16, row 8
   for (let c = 10; c <= 16; c++) map[8][c] = 1;
-
-  // Platform B: cols 4-10, row 12
   for (let c = 4; c <= 10; c++) map[12][c] = 1;
 
-  // Main floor: cols 1-22, row 17 (floor ENDS at col 22 — open right edge)
   for (let c = 1; c <= 22; c++) map[17][c] = 1;
-
-  // Fill below main floor
   for (let r = 18; r < ROWS; r++) {
     for (let c = 1; c <= 22; c++) map[r][c] = 1;
   }
 
-  // Right pit: cols 23-31 are empty — NPCs walking right fall and die
-  // Kill tiles at bottom of right pit
   for (let c = 23; c < COLS; c++) map[ROWS - 1][c] = 2;
 
-  // Player must place Anchor near col 22 to redirect NPCs LEFT before they fall.
-  // After redirect, NPCs walk left toward a gap.
-
-  // Gap in main floor: cols 8-10 (left side)
   for (let c = 8; c <= 10; c++) {
     map[17][c] = 0;
   }
-  // Clear pit below gap
   for (let r = 18; r < ROWS - 1; r++) {
     for (let c = 8; c <= 10; c++) map[r][c] = 0;
   }
-  // Kill tiles at gap bottom
   for (let c = 8; c <= 10; c++) map[ROWS - 1][c] = 2;
-
-  // Exit: col 3, row 16 (left of gap — NPCs cross Architect bridge, continue left to exit)
 
   const roles: Role[] = Array(12).fill("none") as Role[];
   roles[1] = "anchor";
@@ -110,7 +89,88 @@ function createLevel1(): LevelDef {
   };
 }
 
-export const LEVELS: LevelDef[] = [createTutorial(), createLevel1()];
+// Level 2: Anchor + Excavator + Architect
+// Flow: Spawn mid-right on top floor → walk right → open pit → Anchor redirects left
+//       → fall through drop hole → mid platform → Excavator digs shaft down
+//       → lower platform → gap → Architect bridges → exit
+function createLevel2(): LevelDef {
+  const map = emptyMap();
+
+  // Side walls
+  for (let r = 0; r < ROWS; r++) {
+    map[r][0] = 1;
+    map[r][COLS - 1] = 1;
+  }
+
+  // === SECTION A: Top floor with Anchor redirect ===
+  // Top floor: row 4, cols 1-25
+  for (let c = 1; c <= 25; c++) map[4][c] = 1;
+  // Drop hole in top floor: cols 5-6 (left of spawn — NPCs only reach here after Anchor redirect)
+  map[4][5] = 0;
+  map[4][6] = 0;
+
+  // Solid fill below top floor (except drop hole columns)
+  for (let r = 5; r <= 7; r++) {
+    for (let c = 1; c <= 4; c++) map[r][c] = 1;
+    for (let c = 7; c <= 25; c++) map[r][c] = 1;
+  }
+
+  // Right pit: cols 26-30 open with kill tiles at bottom
+  for (let c = 26; c <= 30; c++) map[ROWS - 1][c] = 2;
+
+  // === SECTION B: Mid platform with Excavator ===
+  // Mid floor: row 9, cols 1-15
+  for (let c = 1; c <= 15; c++) map[9][c] = 1;
+
+  // Tall wall on right blocking passage: col 16, rows 5-9
+  for (let r = 5; r <= 9; r++) map[r][16] = 1;
+
+  // Solid fill below mid floor: rows 10-14, cols 1-15
+  for (let r = 10; r <= 14; r++) {
+    for (let c = 1; c <= 15; c++) map[r][c] = 1;
+  }
+
+  // Kill tiles under wrong excavation area (cols 1-9 at row 15)
+  // If excavator digs at cols 1-9, NPCs fall onto kill tiles
+  for (let c = 1; c <= 9; c++) map[15][c] = 2;
+
+  // === SECTION C: Lower platform with Architect bridge ===
+  // Safe landing from correct excavation: row 15, cols 10-20
+  for (let c = 10; c <= 20; c++) map[15][c] = 1;
+  // Gap: cols 21-23 (needs Architect bridge)
+  // Exit platform: row 15, cols 24-30
+  for (let c = 24; c <= 30; c++) map[15][c] = 1;
+
+  // Solid fill below lower platforms
+  for (let r = 16; r < ROWS; r++) {
+    for (let c = 10; c <= 20; c++) map[r][c] = 1;
+    for (let c = 24; c <= 30; c++) map[r][c] = 1;
+  }
+
+  // Kill tiles in gap at bottom
+  for (let c = 21; c <= 23; c++) map[ROWS - 1][c] = 2;
+  // Clear gap column fills
+  for (let r = 16; r < ROWS - 1; r++) {
+    for (let c = 21; c <= 23; c++) map[r][c] = 0;
+  }
+
+  // Roles: early indices so they're available even with few survivors
+  const roles: Role[] = Array(12).fill("none") as Role[];
+  roles[0] = "anchor";
+  roles[1] = "excavator";
+  roles[2] = "architect";
+
+  return {
+    map,
+    exitCol: 28,
+    exitRow: 14,
+    spawnX: 15 * TILE,
+    spawnY: 3 * TILE - NPC_H,
+    roles,
+  };
+}
+
+export const LEVELS: LevelDef[] = [createTutorial(), createLevel1(), createLevel2()];
 
 export function cloneLevelMap(level: LevelDef): number[][] {
   return level.map.map((row) => [...row]);
