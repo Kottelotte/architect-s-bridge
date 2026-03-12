@@ -544,24 +544,49 @@ const Index = () => {
             ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
             ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
           } else {
-            // Dissolve: dust particles drifting away
+            // Dissolve: progressive erosion - particles spawn gradually
             const progress = 1 - npc.deathTimer / 700; // 0→1
-            // Use seeded-ish particles based on npc.id for consistency
-            const particleCount = 24;
+            const totalParticles = 40;
+            // How many particles have been "born" so far (progressive spawn)
+            const spawnedCount = Math.floor(progress * totalParticles);
             const seed = npc.id * 7;
-            for (let i = 0; i < particleCount; i++) {
-              // Deterministic pseudo-random per particle
+
+            // Draw remaining body pixels that haven't eroded yet
+            // Body fades as more particles spawn
+            const bodyAlpha = Math.max(0, 1 - progress * 1.2);
+            if (bodyAlpha > 0) {
+              let bodyColor = "#cccccc";
+              if (npc.role === "architect") bodyColor = "#00ccff";
+              else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
+              ctx.globalAlpha = bodyAlpha;
+              ctx.fillStyle = bodyColor;
+              ctx.beginPath();
+              ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillRect(npc.x + 3, npc.y + 8, NPC_W - 6, 8);
+              ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
+              ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
+              ctx.globalAlpha = 1;
+            }
+
+            // Draw only the particles that have spawned so far
+            for (let i = 0; i < spawnedCount; i++) {
               const h = (seed + i * 137) % 256;
               const srcX = (h % NPC_W);
               const srcY = ((h * 3 + i * 11) % NPC_H);
-              // Drift direction: slightly upward and outward with gentle randomness
-              const angle = ((i / particleCount) * Math.PI * 2) + (h % 10) * 0.1;
-              const drift = progress * (3 + (h % 5));
+              // Each particle's individual age: fraction of time since it spawned
+              const spawnTime = i / totalParticles; // when this particle was born (0→1)
+              const particleAge = Math.max(0, progress - spawnTime); // how long it's been alive
+              const particleLife = 1 - spawnTime; // total lifespan available
+              const particleProgress = Math.min(1, particleAge / Math.max(0.05, particleLife));
+
+              const angle = ((i / totalParticles) * Math.PI * 2) + (h % 10) * 0.1;
+              const drift = particleProgress * (3 + (h % 4));
               const dx = Math.cos(angle) * drift;
-              const dy = -Math.abs(Math.sin(angle)) * drift - progress * 4;
-              const alpha = (1 - progress) * (1 - (i % 3) * 0.15);
-              if (alpha <= 0) continue;
-              ctx.globalAlpha = Math.max(0, alpha);
+              const dy = -Math.abs(Math.sin(angle)) * drift - particleProgress * 3;
+              const alpha = (1 - particleProgress) * 0.9;
+              if (alpha <= 0.01) continue;
+              ctx.globalAlpha = alpha;
               const brightness = 160 + (h % 80);
               ctx.fillStyle = `rgb(${brightness},${Math.floor(brightness * 0.6)},${Math.floor(brightness * 0.5)})`;
               ctx.fillRect(npc.x + srcX + dx, npc.y + srcY + dy, 1, 1);
