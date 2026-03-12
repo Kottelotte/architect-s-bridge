@@ -77,23 +77,48 @@ function createLevel1(): LevelDef {
     for (let c = 1; c < COLS - 1; c++) map[r][c] = 1;
   }
 
-  // Vertical wall at col 25, rows 13-16 — blocks NPCs walking right
-  for (let r = 13; r <= 16; r++) map[r][25] = 1;
+  // Vertical wall at col 25 — short wall (rows 15-16) to redirect NPCs
+  // Only 2 tiles tall so NPCs bounce off but don't get trapped
+  for (let r = 15; r <= 16; r++) map[r][25] = 1;
 
-  // After Anchor redirects left, NPCs walk toward a gap
-  // Gap in main floor: cols 7-9 (3 tiles, left of center)
-  for (let c = 7; c <= 9; c++) {
+  // Gap in main floor: cols 13-16 (4 tiles wide, right of center)
+  // This gap is between spawn-side and the wall — NPCs walking RIGHT
+  // will fall into it UNLESS Anchor redirects them first at col 25,
+  // then they walk LEFT past the gap area... 
+  // 
+  // Actually: NPCs walk right → hit wall at 25 → bounce left → 
+  // need Anchor placed BEFORE the gap so they get redirected again.
+  //
+  // Better design: gap is to the LEFT of the wall, so NPCs walking
+  // right pass over it (no gap yet), hit wall, bounce left, then
+  // fall into gap. Anchor must be placed to redirect BEFORE hitting wall,
+  // sending them left toward the gap which needs Architect bridge.
+  //
+  // Clearest design:
+  // NPCs walk right → reach wall at col 25 → bounce left naturally →
+  // walk left into gap at cols 7-9 → need Architect bridge.
+  // But we need Anchor to be required too.
+  //
+  // Solution: After bouncing off wall, NPCs walk left. Put a SECOND wall
+  // at col 12 (rows 15-16) so they bounce right again → trapped between
+  // walls. Player places Anchor between the walls to redirect them left
+  // past the second wall. Gap is at cols 5-7, left of second wall.
+
+  // Second wall at col 12, rows 15-16
+  for (let r = 15; r <= 16; r++) map[r][12] = 1;
+
+  // Gap in main floor: cols 5-7
+  for (let c = 5; c <= 7; c++) {
     map[17][c] = 0;
   }
-  // Clear the pit below the gap
+  // Clear pit below gap
   for (let r = 18; r < ROWS - 1; r++) {
-    for (let c = 7; c <= 9; c++) map[r][c] = 0;
+    for (let c = 5; c <= 7; c++) map[r][c] = 0;
   }
   // Kill tiles at gap bottom
-  for (let c = 7; c <= 9; c++) map[ROWS - 1][c] = 2;
+  for (let c = 5; c <= 7; c++) map[ROWS - 1][c] = 2;
 
-  // Exit on the left side of the gap: col 3, row 16
-  // NPCs cross bridge over gap (cols 7-9), continue left to exit
+  // Exit: col 2, row 16 (left of gap, NPCs cross bridge then reach exit)
 
   const roles: Role[] = Array(12).fill("none") as Role[];
   roles[1] = "architect";
@@ -101,7 +126,7 @@ function createLevel1(): LevelDef {
 
   return {
     map,
-    exitCol: 3,
+    exitCol: 2,
     exitRow: 16,
     spawnX: 2 * TILE,
     spawnY: 3 * TILE - NPC_H,
