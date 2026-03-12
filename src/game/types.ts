@@ -33,6 +33,8 @@ export type TransitionPhase =
   | "typewriter"
   | "static2"
   | "fail_static"
+  | "fail_typewriter"
+  | "fail_static2"
   | "done";
 
 export interface GameState {
@@ -59,4 +61,5 @@ export interface GameState {
   transitionText: string;
   transitionCharIndex: number;
   inputDisabled: boolean;
+  failMessage: string;
 }

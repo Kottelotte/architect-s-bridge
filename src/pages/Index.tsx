@@ -4,7 +4,7 @@ import {
   TILE, COLS, ROWS, W, H, NPC_W, NPC_H, SPEED, GRAVITY, MAX_FALL,
   SPAWN_INTERVAL, BRIDGE_TILES, BRIDGE_DELAY, GLITCH_DURATION,
   ANCHOR_PUSH, TYPEWRITER_SPEED, STATIC_DURATION, TRANSITION_TEXT,
-  TOTAL_NPCS,
+  TOTAL_NPCS, FAIL_MESSAGES,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
 import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum } from "../game/audio";
@@ -46,6 +46,7 @@ function initState(levelIndex: number): GameState {
     transitionText: "",
     transitionCharIndex: 0,
     inputDisabled: false,
+    failMessage: "",
   };
 }
 
@@ -189,7 +190,12 @@ const Index = () => {
     };
 
     const startTransition = (s: GameState, fail = false) => {
-      s.transition = fail ? "fail_static" : "static1";
+      if (fail) {
+        s.transition = "fail_static";
+        s.failMessage = FAIL_MESSAGES[Math.floor(Math.random() * FAIL_MESSAGES.length)];
+      } else {
+        s.transition = "static1";
+      }
       s.transitionTimer = STATIC_DURATION;
       s.transitionText = "";
       s.transitionCharIndex = 0;
@@ -205,12 +211,12 @@ const Index = () => {
         s.transitionCharIndex = 0;
         s.transitionText = "";
       } else if (s.transition === "typewriter") {
-        if (s.transitionTimer <= 0 && s.transitionCharIndex < TRANSITION_TEXT.length) {
-          s.transitionText += TRANSITION_TEXT[s.transitionCharIndex];
+        const targetText = TRANSITION_TEXT;
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
           s.transitionTimer = TYPEWRITER_SPEED;
-        } else if (s.transitionCharIndex >= TRANSITION_TEXT.length) {
-          // Brief pause then static2
+        } else if (s.transitionCharIndex >= targetText.length) {
           s.transitionTimer -= dt;
           if (s.transitionTimer <= -400) {
             s.transition = "static2";
@@ -228,9 +234,27 @@ const Index = () => {
         s.transition = "none";
         s.inputDisabled = false;
       } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
+        s.transition = "fail_typewriter";
+        s.transitionTimer = TYPEWRITER_SPEED;
+        s.transitionCharIndex = 0;
+        s.transitionText = "";
+      } else if (s.transition === "fail_typewriter") {
+        const targetText = s.failMessage || FAIL_MESSAGES[0];
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED;
+        } else if (s.transitionCharIndex >= targetText.length) {
+          s.transitionTimer -= dt;
+          if (s.transitionTimer <= -400) {
+            s.transition = "fail_static2";
+            s.transitionTimer = STATIC_DURATION;
+          }
+        }
+      } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Reset to level 0
-        const ns = initState(0);
+        // Reload same level
+        const ns = initState(s.currentLevel);
         ns.lastTime = s.lastTime;
         Object.assign(s, ns);
         s.transition = "none";
@@ -372,14 +396,14 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2") {
         drawStatic(ctx);
         return;
       }
-      if (s.transition === "typewriter") {
+      if (s.transition === "typewriter" || s.transition === "fail_typewriter") {
         ctx.fillStyle = "#0a0a12";
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "#00ff88";
+        ctx.fillStyle = s.transition === "fail_typewriter" ? "#ff4444" : "#00ff88";
         ctx.font = "14px monospace";
         ctx.fillText(s.transitionText + (Math.floor(now / 300) % 2 === 0 ? "█" : ""), W / 2 - 160, H / 2);
         return;
@@ -423,19 +447,31 @@ const Index = () => {
 
         const isGlitching = now < npc.glitchUntil;
 
-        // Hover glow
+        // Hover glow with flickering glitch outline
         if (s.hoveredNpcId === npc.id && !isGlitching) {
           const isRoleReady = !npc.roleActivated && npc.role !== "none";
           const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
-          ctx.shadowColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
-          ctx.shadowBlur = isRoleReady ? 20 : 12;
-          ctx.strokeStyle = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#aaaaaa";
+          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
+          
+          // Flickering effect
+          const flicker = Math.sin(now / 40) * 0.3 + 0.7;
+          const glitchOffset = Math.floor(Math.sin(now / 60) * 2);
+          
+          ctx.shadowColor = glitchColor;
+          ctx.shadowBlur = isRoleReady ? 25 * flicker : 15 * flicker;
+          ctx.strokeStyle = glitchColor;
+          ctx.globalAlpha = flicker;
           ctx.lineWidth = isRoleReady ? 2.5 : 2;
-          ctx.strokeRect(npc.x - 3, npc.y - 3, NPC_W + 6, NPC_H + 6);
+          
+          // Main outline with glitch offset
+          ctx.strokeRect(npc.x - 3 + glitchOffset, npc.y - 3, NPC_W + 6, NPC_H + 6);
           if (isRoleReady) {
-            ctx.strokeRect(npc.x - 5, npc.y - 5, NPC_W + 10, NPC_H + 10);
+            // Second flickering outline offset in opposite direction
+            ctx.globalAlpha = flicker * 0.5;
+            ctx.strokeRect(npc.x - 5 - glitchOffset, npc.y - 5, NPC_W + 10, NPC_H + 10);
           }
+          ctx.globalAlpha = 1;
           ctx.shadowBlur = 0;
         }
 
