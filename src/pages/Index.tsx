@@ -516,6 +516,27 @@ const Index = () => {
       ctx.lineTo(W + 20, H);
       ctx.closePath();
       ctx.fill();
+
+      // Distant central massif — large soft ridge behind terrain layers
+      const massifParallax = Math.sin(now / 70000) * 6;
+      const massifBaseY = H * 0.42;
+      ctx.fillStyle = "rgba(38, 44, 58, 0.25)";
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const massifSteps = 50;
+      for (let i = 0; i <= massifSteps; i++) {
+        const xr = i / massifSteps;
+        const x = W * xr + massifParallax;
+        // Bell-curve centered at 0.5 with gentle shoulders
+        const bell = Math.exp(-Math.pow((xr - 0.5) / 0.28, 2));
+        const y = massifBaseY + 60 - 55 * bell
+          + 6 * Math.sin(xr * Math.PI * 2.2 + 0.8);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
+
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
