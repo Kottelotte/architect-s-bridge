@@ -612,7 +612,7 @@ const Index = () => {
       ctx.fillRect(0, horizonY - 12, W, 52);
 
       // Mid layer: darker terrain shapes + ruin fragments
-      ctx.fillStyle = "#23283a";
+      ctx.fillStyle = "#181d2e";
       ctx.beginPath();
       const midSteps = 40;
       ctx.moveTo(0, midTerrainY(0) + parallaxMid * 0.1);
