@@ -46,6 +46,7 @@ function initState(levelIndex: number): GameState {
     transitionText: "",
     transitionCharIndex: 0,
     inputDisabled: false,
+    failMessage: "",
   };
 }
 
