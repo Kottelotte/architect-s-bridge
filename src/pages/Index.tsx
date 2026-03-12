@@ -188,12 +188,13 @@ const Index = () => {
       return null;
     };
 
-    const startTransition = (s: GameState) => {
-      s.transition = "static1";
+    const startTransition = (s: GameState, fail = false) => {
+      s.transition = fail ? "fail_static" : "static1";
       s.transitionTimer = STATIC_DURATION;
       s.transitionText = "";
       s.transitionCharIndex = 0;
       s.inputDisabled = true;
+      startTransitionHum();
     };
 
     const updateTransition = (dt: number, s: GameState) => {
