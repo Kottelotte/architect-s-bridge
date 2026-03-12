@@ -95,7 +95,7 @@ export function playAnchorClick() {
   clickBp.frequency.value = 400;
   clickBp.Q.value = 5;
   const clickGain = ctx.createGain();
-  clickGain.gain.setValueAtTime(0.18, ctx.currentTime);
+  clickGain.gain.setValueAtTime(0.45, ctx.currentTime);
   clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + clickDur);
   clickSrc.connect(clickBp).connect(clickGain).connect(ctx.destination);
   clickSrc.start();
