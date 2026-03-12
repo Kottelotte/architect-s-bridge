@@ -537,6 +537,25 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
+      // Distant central hill — single large soft hill behind terrain
+      const hillParallax = Math.sin(now / 80000) * 4;
+      const hillBaseY = H * 0.44;
+      ctx.fillStyle = "rgba(58, 65, 88, 0.22)";
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const hillSteps = 50;
+      for (let i = 0; i <= hillSteps; i++) {
+        const xr = i / hillSteps;
+        const x = W * xr + hillParallax;
+        const bell = Math.exp(-Math.pow((xr - 0.48) / 0.22, 2));
+        const y = hillBaseY + 50 - 42 * bell
+          + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
+
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
