@@ -38,7 +38,7 @@ export function playBuildTick() {
   lp.Q.value = 4;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.18, ctx.currentTime);
+  gain.gain.setValueAtTime(0.25, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
   // Sum three filtered paths for layered metallic hit

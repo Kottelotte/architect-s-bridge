@@ -81,13 +81,22 @@ const Index = () => {
       return; // mid-air, do nothing — don't consume ability
     }
 
-    // Check there is a gap directly ahead before activating
+    // Check there is a gap within the next 2 tiles ahead before activating
     const dir = npc.direction;
     const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
-    const aheadCol = startCol + dir;
-    if (aheadCol < 0 || aheadCol >= COLS || isSolid(s.map, aheadCol, buildRow)) {
-      return; // no gap ahead — don't consume ability
+    let hasGap = false;
+    for (let look = 1; look <= 2; look++) {
+      const checkCol = startCol + dir * look;
+      if (checkCol >= 0 && checkCol < COLS && !isSolid(s.map, checkCol, buildRow)) {
+        hasGap = true;
+        break;
+      }
+    }
+    if (!hasGap) {
+      // Rejected: flash glitch and resume simulation
+      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      return;
     }
 
     s.pauseTimer = 400;
