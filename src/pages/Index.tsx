@@ -579,8 +579,8 @@ const Index = () => {
           - 6 * Math.cos(xRatio * Math.PI * 5.0 + 0.8);
       };
 
-      // Far layer: eroded hills — lightest tone for distance
-      ctx.fillStyle = "#1f2638";
+      // Far layer: eroded hills — lighter tone for distance
+      ctx.fillStyle = "#23283a";
       ctx.beginPath();
       const farSteps = 40;
       ctx.moveTo(0, farTerrainY(0) + parallaxFar * 0.2);
