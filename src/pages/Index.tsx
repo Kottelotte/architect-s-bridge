@@ -111,6 +111,7 @@ const Index = () => {
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    startAmbientDrone();
     const s = stateRef.current;
     if (s.inputDisabled) return;
     const canvas = canvasRef.current;
