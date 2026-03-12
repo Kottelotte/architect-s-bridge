@@ -516,6 +516,27 @@ const Index = () => {
       ctx.lineTo(W + 20, H);
       ctx.closePath();
       ctx.fill();
+
+      // Distant central massif — large soft ridge behind terrain layers
+      const massifParallax = Math.sin(now / 70000) * 6;
+      const massifBaseY = H * 0.42;
+      ctx.fillStyle = "rgba(38, 44, 58, 0.25)";
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const massifSteps = 50;
+      for (let i = 0; i <= massifSteps; i++) {
+        const xr = i / massifSteps;
+        const x = W * xr + massifParallax;
+        // Bell-curve centered at 0.5 with gentle shoulders
+        const bell = Math.exp(-Math.pow((xr - 0.5) / 0.28, 2));
+        const y = massifBaseY + 60 - 55 * bell
+          + 6 * Math.sin(xr * Math.PI * 2.2 + 0.8);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
+
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
@@ -600,18 +621,23 @@ const Index = () => {
       ctx.fillRect(W * 0.78 + parallaxMid, midTerrainY(0.78), 10, 4);
       ctx.fillRect(W * 0.80 + parallaxMid, midTerrainY(0.80) - 4, 5, 4);
 
-      // Near terrain silhouette (subtle, just adds ground variation for monoliths)
+      // Near terrain silhouette — broken up with dips and undulations
       ctx.fillStyle = "#080c18";
       ctx.beginPath();
       const nearBaseY = horizonY + 28;
-      ctx.moveTo(0, nearBaseY + 6);
-      ctx.quadraticCurveTo(W * 0.08 + parallaxNear * 0.3, nearBaseY - 4, W * 0.15, nearBaseY + 2);
-      ctx.quadraticCurveTo(W * 0.25 + parallaxNear * 0.2, nearBaseY - 8, W * 0.38, nearBaseY + 4);
-      ctx.quadraticCurveTo(W * 0.5 + parallaxNear * 0.15, nearBaseY - 2, W * 0.62, nearBaseY + 6);
-      ctx.quadraticCurveTo(W * 0.75 + parallaxNear * 0.25, nearBaseY - 6, W * 0.87, nearBaseY + 2);
-      ctx.quadraticCurveTo(W * 0.95, nearBaseY - 3, W, nearBaseY + 4);
-      ctx.lineTo(W, H);
-      ctx.lineTo(0, H);
+      const nearSteps = 80;
+      ctx.moveTo(-5, H);
+      for (let i = 0; i <= nearSteps; i++) {
+        const xr = i / nearSteps;
+        const x = W * xr + parallaxNear * 0.2;
+        const y = nearBaseY
+          + 10 * Math.sin(xr * Math.PI * 3.2 + 0.7)
+          - 6 * Math.cos(xr * Math.PI * 5.1 + 1.3)
+          + 4 * Math.sin(xr * Math.PI * 8.0 + 2.0)
+          - 3 * Math.cos(xr * Math.PI * 12.0 + 0.4);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 5, H);
       ctx.closePath();
       ctx.fill();
 
