@@ -86,7 +86,7 @@ const Index = () => {
     npc.vy = 0;
 
     const dir = npc.direction;
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     let tilesPlaced = 0;
