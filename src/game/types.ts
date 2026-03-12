@@ -61,4 +61,5 @@ export interface GameState {
   transitionText: string;
   transitionCharIndex: number;
   inputDisabled: boolean;
+  failMessage: string;
 }
