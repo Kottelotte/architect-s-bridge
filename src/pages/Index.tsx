@@ -86,27 +86,14 @@ const Index = () => {
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
-
-    // Must be grounded
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
-    const footCol1 = Math.floor(npc.x / TILE);
-    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
-    const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
-    if (!grounded) {
-      npc.glitchUntil = performance.now() + GLITCH_DURATION;
-      return;
-    }
-
     const gapDist = findGapDistance(npc, s.map, 4);
-    if (gapDist < 0) {
-      // No gap within 4 tiles — reject
-      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+
+    if (gapDist >= 1 && gapDist <= 4) {
+      npc.architectState = "armed";
       return;
     }
 
-    // Always arm — never build immediately on click
-    npc.architectState = "armed";
-    npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
+    npc.glitchUntil = performance.now() + GLITCH_DURATION;
   }, [findGapDistance]);
 
   const executeArchitectBuild = useCallback((npc: NPC) => {
@@ -115,11 +102,10 @@ const Index = () => {
     const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
-    s.pauseTimer = 400;
+    s.pauseTimer = Number.POSITIVE_INFINITY;
     npc.isBuilding = true;
     npc.architectState = "building";
     npc.vy = 0;
-    npc.roleActivated = true;
 
     let offset = 1;
     const placeNext = () => {
@@ -127,6 +113,8 @@ const Index = () => {
       const row = buildRow;
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS || isSolid(s.map, col, row)) {
         npc.isBuilding = false;
+        npc.architectState = "finished";
+        s.pauseTimer = 0;
         return;
       }
       s.map[row][col] = 1;
@@ -163,13 +151,25 @@ const Index = () => {
     const npc = getNpcAt(mx, my);
     if (!npc) return;
 
-    if (!npc.roleActivated && npc.role !== "none") {
-      if (npc.role === "architect") {
-        activateArchitect(npc);
-      } else if (npc.role === "anchor") {
-        activateAnchor(npc);
+    if (npc.role === "architect") {
+      if (npc.architectState === "building" || npc.architectState === "finished") {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+        return;
       }
-    } else {
+      activateArchitect(npc);
+      return;
+    }
+
+    if (npc.role === "anchor") {
+      if (!npc.roleActivated) {
+        activateAnchor(npc);
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
+    if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
   }, [getNpcAt, activateArchitect, activateAnchor]);
@@ -326,9 +326,10 @@ const Index = () => {
       s.hoveredNpcId = hoveredNpc?.id ?? null;
 
       // Hover pause for unactivated role NPCs
-      const hoverPause = hoveredNpc != null &&
-        (hoveredNpc.role === "architect" || hoveredNpc.role === "anchor") &&
-        !hoveredNpc.roleActivated;
+      const hoverPause = hoveredNpc != null && (
+        (hoveredNpc.role === "architect" && hoveredNpc.architectState === "idle") ||
+        (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated)
+      );
 
       if (s.pauseTimer > 0) {
         s.pauseTimer -= dt;
@@ -376,7 +377,7 @@ const Index = () => {
           npc.vy = 0;
 
           // Auto-execute armed architect when gap is within 2 tiles
-          if (npc.architectState === "armed" && !npc.roleActivated && npc.role === "architect") {
+          if (npc.architectState === "armed" && npc.role === "architect") {
             const gapDist = findGapDistance(npc, s.map, 2);
             if (gapDist >= 1 && gapDist <= 2) {
               executeArchitectBuild(npc);
@@ -497,9 +498,9 @@ const Index = () => {
 
         // Hover glow with flickering glitch outline
         if (s.hoveredNpcId === npc.id && !isGlitching) {
-          const isRoleReady = !npc.roleActivated && npc.role !== "none";
-          const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
+          const isArchitectReady = npc.role === "architect" && npc.architectState === "idle";
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
+          const isRoleReady = isArchitectReady || isAnchorReady;
           const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
           
           // Flickering effect
@@ -533,9 +534,11 @@ const Index = () => {
           }
         } else {
           let bodyColor: string;
-          if (npc.role === "architect" && !npc.roleActivated) {
+          if (npc.role === "architect" && npc.architectState === "idle") {
             bodyColor = "#00ccff";
-          } else if (npc.role === "architect" && npc.roleActivated) {
+          } else if (npc.role === "architect" && npc.architectState === "armed") {
+            bodyColor = "#0099bb";
+          } else if (npc.role === "architect" && (npc.architectState === "building" || npc.architectState === "finished")) {
             bodyColor = "#006688";
           } else if (npc.role === "anchor" && !npc.roleActivated) {
             bodyColor = "#ff6600";

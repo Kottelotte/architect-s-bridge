@@ -1,6 +1,6 @@
 export type Role = "none" | "architect" | "anchor" | "excavator" | "vessel";
 
-export type ArchitectState = "idle" | "armed" | "building";
+export type ArchitectState = "idle" | "armed" | "building" | "finished";
 
 export interface NPC {
   id: number;
