@@ -106,6 +106,7 @@ const Index = () => {
     npc.stopsMoving = true;
     npc.isSolid = true;
     npc.countsAsDead = true;
+    playAnchorClick();
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
