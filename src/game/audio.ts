@@ -5,57 +5,93 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
-// Hollow metallic tick for Architect bridge building
+// Metallic industrial clang for Architect bridge building
 export function playBuildTick() {
   const ctx = getCtx();
-  const bufferSize = ctx.sampleRate * 0.05;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+  const dur = 0.08;
+  const bufSize = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.08));
   }
-  const noise = ctx.createBufferSource();
-  noise.buffer = buffer;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
 
+  // Metallic resonance via tight bandpass
   const bp = ctx.createBiquadFilter();
   bp.type = "bandpass";
-  bp.frequency.value = 3200 + Math.random() * 800;
-  bp.Q.value = 12;
+  bp.frequency.value = 800 + Math.random() * 400;
+  bp.Q.value = 20;
 
-  const hp = ctx.createBiquadFilter();
-  hp.type = "highpass";
-  hp.frequency.value = 1800;
+  // Second resonance for body
+  const bp2 = ctx.createBiquadFilter();
+  bp2.type = "bandpass";
+  bp2.frequency.value = 1800 + Math.random() * 600;
+  bp2.Q.value = 15;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.06, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+  gain.gain.setValueAtTime(0.15, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
-  noise.connect(bp).connect(hp).connect(gain).connect(ctx.destination);
-  noise.start();
-  noise.stop(ctx.currentTime + 0.05);
+  // Split noise through both resonant filters and sum
+  const merge = ctx.createGain();
+  merge.gain.value = 1;
+  src.connect(bp).connect(merge);
+  src.connect(bp2).connect(merge);
+  merge.connect(gain).connect(ctx.destination);
+
+  src.start();
+  src.stop(ctx.currentTime + dur);
 }
 
-// Glitch noise burst with pitch drop for Anchor activation
+// Heavy mechanical lock sound for Anchor activation
 export function playAnchorClick() {
   const ctx = getCtx();
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc1.type = "sawtooth";
-  osc2.type = "square";
-  osc1.frequency.value = 600;
-  osc2.frequency.value = 620;
-  osc1.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
-  osc2.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 0.1);
-  gain.gain.setValueAtTime(0.07, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-  osc1.connect(gain);
-  osc2.connect(gain);
-  gain.connect(ctx.destination);
-  osc1.start();
-  osc2.start();
-  osc1.stop(ctx.currentTime + 0.1);
-  osc2.stop(ctx.currentTime + 0.1);
+  const dur = 0.12;
+
+  // Sub hit — low-frequency thud
+  const bufSize = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.06));
+  }
+  const noiseSrc = ctx.createBufferSource();
+  noiseSrc.buffer = buf;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 200;
+  lp.Q.value = 8;
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.25, ctx.currentTime);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+
+  noiseSrc.connect(lp).connect(noiseGain).connect(ctx.destination);
+  noiseSrc.start();
+  noiseSrc.stop(ctx.currentTime + dur);
+
+  // Click transient — short sharp knock
+  const clickDur = 0.03;
+  const clickBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * clickDur), ctx.sampleRate);
+  const cd = clickBuf.getChannelData(0);
+  for (let i = 0; i < cd.length; i++) {
+    cd[i] = (Math.random() * 2 - 1) * Math.exp(-i / (cd.length * 0.04));
+  }
+  const clickSrc = ctx.createBufferSource();
+  clickSrc.buffer = clickBuf;
+  const clickBp = ctx.createBiquadFilter();
+  clickBp.type = "bandpass";
+  clickBp.frequency.value = 400;
+  clickBp.Q.value = 5;
+  const clickGain = ctx.createGain();
+  clickGain.gain.setValueAtTime(0.18, ctx.currentTime);
+  clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + clickDur);
+  clickSrc.connect(clickBp).connect(clickGain).connect(ctx.destination);
+  clickSrc.start();
+  clickSrc.stop(ctx.currentTime + clickDur);
 }
 
 let humOsc: OscillatorNode | null = null;
@@ -80,12 +116,12 @@ export function startTransitionHum() {
   const lfoGain = ctx.createGain();
   humLfo.type = "sine";
   humLfo.frequency.value = 3;
-  lfoGain.gain.value = 0.02;
+  lfoGain.gain.value = 0.08;
   humLfo.connect(lfoGain);
   lfoGain.connect(humGain.gain);
 
   humGain.gain.setValueAtTime(0.01, ctx.currentTime);
-  humGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 1.5);
+  humGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 1.5);
 
   humOsc.connect(humGain);
   humOsc2.connect(humGain);
@@ -121,30 +157,57 @@ export function startAmbientDrone() {
   const ctx = getCtx();
 
   ambientGain = ctx.createGain();
-  ambientGain.gain.value = 0.04;
+  ambientGain.gain.value = 0.25;
   ambientGain.connect(ctx.destination);
 
-  // Layer 1: Distant electrical crackle (irregular noise bursts)
+  // Layer 1: Filtered noise base with slow modulation (distant machinery)
+  const startNoiseBase = () => {
+    if (!ambientRunning || !ambientGain) return;
+    const c = getCtx();
+    const dur = 4 + Math.random() * 3;
+    const bufSize = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      const env = Math.sin((i / bufSize) * Math.PI);
+      d[i] = (Math.random() * 2 - 1) * env * 0.4;
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const lp = c.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 250 + Math.random() * 150;
+    lp.Q.value = 1;
+    const g = c.createGain();
+    g.gain.value = 0.12;
+    src.connect(lp).connect(g).connect(ambientGain!);
+    src.start();
+    src.stop(c.currentTime + dur);
+    const id = window.setTimeout(startNoiseBase, (dur * 1000) - 500 + Math.random() * 2000);
+    ambientIntervals.push(id);
+  };
+
+  // Layer 2: Electrical crackle (irregular bursts)
   const scheduleCrackle = () => {
     if (!ambientRunning) return;
-    const delay = 400 + Math.random() * 2000;
+    const delay = 500 + Math.random() * 2500;
     const id = window.setTimeout(() => {
       if (!ambientRunning || !ambientGain) return;
       const c = getCtx();
-      const len = 0.01 + Math.random() * 0.03;
+      const len = 0.015 + Math.random() * 0.04;
       const bufSize = Math.floor(c.sampleRate * len);
       const buf = c.createBuffer(1, bufSize, c.sampleRate);
       const d = buf.getChannelData(0);
       for (let i = 0; i < bufSize; i++) {
-        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.3));
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.2));
       }
       const src = c.createBufferSource();
       src.buffer = buf;
       const hp = c.createBiquadFilter();
       hp.type = "highpass";
-      hp.frequency.value = 2000 + Math.random() * 3000;
+      hp.frequency.value = 2500 + Math.random() * 3000;
       const g = c.createGain();
-      g.gain.value = 0.02 + Math.random() * 0.03;
+      g.gain.value = 0.06 + Math.random() * 0.05;
       src.connect(hp).connect(g).connect(ambientGain!);
       src.start();
       src.stop(c.currentTime + len);
@@ -153,61 +216,39 @@ export function startAmbientDrone() {
     ambientIntervals.push(id);
   };
 
-  // Layer 2: Subtle ventilation wind (filtered noise, long duration, irregular volume)
-  const scheduleWind = () => {
-    if (!ambientRunning) return;
-    const delay = 2000 + Math.random() * 5000;
-    const id = window.setTimeout(() => {
-      if (!ambientRunning || !ambientGain) return;
-      const c = getCtx();
-      const dur = 0.8 + Math.random() * 1.5;
-      const bufSize = Math.floor(c.sampleRate * dur);
-      const buf = c.createBuffer(1, bufSize, c.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufSize; i++) {
-        // Shaped noise: fade in and out
-        const env = Math.sin((i / bufSize) * Math.PI);
-        d[i] = (Math.random() * 2 - 1) * env * 0.3;
-      }
-      const src = c.createBufferSource();
-      src.buffer = buf;
-      const lp = c.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 400 + Math.random() * 300;
-      lp.Q.value = 0.5;
-      const g = c.createGain();
-      g.gain.value = 0.015 + Math.random() * 0.02;
-      src.connect(lp).connect(g).connect(ambientGain!);
-      src.start();
-      src.stop(c.currentTime + dur);
-      scheduleWind();
-    }, delay);
-    ambientIntervals.push(id);
-  };
-
-  // Layer 3: Occasional metallic ticks (very sparse)
+  // Layer 3: Sparse metallic ticks
   const scheduleTick = () => {
     if (!ambientRunning) return;
     const delay = 3000 + Math.random() * 8000;
     const id = window.setTimeout(() => {
       if (!ambientRunning || !ambientGain) return;
       const c = getCtx();
-      const osc = c.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = 1200 + Math.random() * 2000;
+      const tickDur = 0.05;
+      const bufSize = Math.floor(c.sampleRate * tickDur);
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.05));
+      }
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const bp = c.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1500 + Math.random() * 2000;
+      bp.Q.value = 18;
       const g = c.createGain();
-      g.gain.setValueAtTime(0.015 + Math.random() * 0.01, c.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.04);
-      osc.connect(g).connect(ambientGain!);
-      osc.start();
-      osc.stop(c.currentTime + 0.04);
+      g.gain.setValueAtTime(0.04 + Math.random() * 0.03, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + tickDur);
+      src.connect(bp).connect(g).connect(ambientGain!);
+      src.start();
+      src.stop(c.currentTime + tickDur);
       scheduleTick();
     }, delay);
     ambientIntervals.push(id);
   };
 
+  startNoiseBase();
   scheduleCrackle();
-  scheduleWind();
   scheduleTick();
 }
 

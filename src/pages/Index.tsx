@@ -78,22 +78,26 @@ const Index = () => {
     const footCol1 = Math.floor(npc.x / TILE);
     const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
     if (!isSolid(s.map, footCol1, footRow) && !isSolid(s.map, footCol2, footRow)) {
-      return; // mid-air, do nothing
+      return; // mid-air, do nothing — don't consume ability
+    }
+
+    // Check there is a gap directly ahead before activating
+    const dir = npc.direction;
+    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
+    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    const aheadCol = startCol + dir;
+    if (aheadCol < 0 || aheadCol >= COLS || isSolid(s.map, aheadCol, buildRow)) {
+      return; // no gap ahead — don't consume ability
     }
 
     s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
 
-    const dir = npc.direction;
-    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
-    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
-
     let offset = 1;
     const placeNext = () => {
       const col = startCol + dir * offset;
       const row = buildRow;
-      // Stop if out of bounds or hit a solid tile
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS || isSolid(s.map, col, row)) {
         npc.roleActivated = true;
         npc.isBuilding = false;
