@@ -206,7 +206,7 @@ const Index = () => {
         id,
         x: s.spawnX,
         y: s.spawnY,
-        direction: 1,
+        direction: 1 as const,
         isAlive: true,
         isRescued: false,
         role,
@@ -218,7 +218,9 @@ const Index = () => {
         stopsMoving: false,
         isSolid: false,
         countsAsDead: false,
-        architectState: "idle",
+        architectState: "idle" as const,
+        deathPhase: "none" as const,
+        deathTimer: 0,
       };
     };
 
