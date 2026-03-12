@@ -326,9 +326,10 @@ const Index = () => {
       s.hoveredNpcId = hoveredNpc?.id ?? null;
 
       // Hover pause for unactivated role NPCs
-      const hoverPause = hoveredNpc != null &&
-        (hoveredNpc.role === "architect" || hoveredNpc.role === "anchor") &&
-        !hoveredNpc.roleActivated;
+      const hoverPause = hoveredNpc != null && (
+        (hoveredNpc.role === "architect" && hoveredNpc.architectState === "idle") ||
+        (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated)
+      );
 
       if (s.pauseTimer > 0) {
         s.pauseTimer -= dt;
