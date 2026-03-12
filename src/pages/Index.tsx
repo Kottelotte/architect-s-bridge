@@ -272,13 +272,18 @@ const Index = () => {
       }
       if (hoverPause) return;
 
-      // Check level complete
+      // Check level complete or fail
       if (s.spawnCount >= s.totalNpc) {
         const allResolved = s.npcs.every(
           (n) => n.isRescued || !n.isAlive || n.countsAsDead
         );
         if (allResolved && s.transition === "none") {
-          startTransition(s);
+          const anyRescued = s.npcs.some((n) => n.isRescued);
+          if (!anyRescued) {
+            startTransition(s, true);
+          } else {
+            startTransition(s);
+          }
           return;
         }
       }
