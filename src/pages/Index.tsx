@@ -194,6 +194,7 @@ const Index = () => {
         stopsMoving: false,
         isSolid: false,
         countsAsDead: false,
+        architectArmed: false,
       };
     };
 
