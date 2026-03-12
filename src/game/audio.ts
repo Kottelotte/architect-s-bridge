@@ -121,7 +121,7 @@ export function startTransitionHum() {
   lfoGain.connect(humGain.gain);
 
   humGain.gain.setValueAtTime(0.01, ctx.currentTime);
-  humGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 1.5);
+  humGain.gain.linearRampToValueAtTime(1.1, ctx.currentTime + 1.5);
 
   humOsc.connect(humGain);
   humOsc2.connect(humGain);
