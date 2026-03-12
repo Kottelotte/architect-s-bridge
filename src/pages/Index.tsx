@@ -90,6 +90,7 @@ const Index = () => {
       const row = footRow;
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         s.map[row][col] = 1;
+        playBuildTick();
       }
       tilesPlaced++;
       setTimeout(placeNext, BRIDGE_DELAY);
