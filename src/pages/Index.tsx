@@ -608,7 +608,7 @@ const Index = () => {
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [getNpcAt]);
+  }, [getNpcAt, findGapDistance, executeArchitectBuild]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#08080f]">
