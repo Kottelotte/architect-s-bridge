@@ -70,48 +70,67 @@ const Index = () => {
     return null;
   }, []);
 
+  // Helper: find gap distance ahead (returns tile count to first gap, or -1)
+  const findGapDistance = useCallback((npc: NPC, map: number[][], maxDist: number): number => {
+    const dir = npc.direction;
+    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
+    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    for (let look = 1; look <= maxDist; look++) {
+      const checkCol = startCol + dir * look;
+      if (checkCol >= 0 && checkCol < COLS && !isSolid(map, checkCol, buildRow)) {
+        return look;
+      }
+    }
+    return -1;
+  }, []);
+
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
 
-    // Architect can only build when grounded
+    // Must be grounded
     const footRow = Math.floor((npc.y + NPC_H) / TILE);
     const footCol1 = Math.floor(npc.x / TILE);
     const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
     const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
     if (!grounded) {
-      // Mid-air: flash glitch, do NOT consume ability
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
       return;
     }
 
-    // Check there is a gap within the next 2 tiles ahead before activating
-    const dir = npc.direction;
-    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
-    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
-    let hasGap = false;
-    for (let look = 1; look <= 2; look++) {
-      const checkCol = startCol + dir * look;
-      if (checkCol >= 0 && checkCol < COLS && !isSolid(s.map, checkCol, buildRow)) {
-        hasGap = true;
-        break;
-      }
-    }
-    if (!hasGap) {
-      // Rejected: flash glitch and resume simulation, do NOT consume ability
+    const gapDist = findGapDistance(npc, s.map, 4);
+    if (gapDist < 0) {
+      // No gap within 4 tiles — reject
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
       return;
     }
+
+    if (gapDist <= 2) {
+      // Close enough — execute immediately
+      executeArchitectBuild(npc);
+    } else {
+      // Arm for auto-execution when closer
+      npc.architectArmed = true;
+      npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
+    }
+  }, []);
+
+  const executeArchitectBuild = useCallback((npc: NPC) => {
+    const s = stateRef.current;
+    const dir = npc.direction;
+    const buildRow = Math.floor((npc.y + NPC_H) / TILE);
+    const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
     s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
+    npc.architectArmed = false;
+    npc.roleActivated = true;
 
     let offset = 1;
     const placeNext = () => {
       const col = startCol + dir * offset;
       const row = buildRow;
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS || isSolid(s.map, col, row)) {
-        npc.roleActivated = true;
         npc.isBuilding = false;
         return;
       }
@@ -194,6 +213,7 @@ const Index = () => {
         stopsMoving: false,
         isSolid: false,
         countsAsDead: false,
+        architectArmed: false,
       };
     };
 
@@ -359,6 +379,14 @@ const Index = () => {
         if (isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow)) {
           npc.y = footRow * TILE - NPC_H;
           npc.vy = 0;
+
+          // Auto-execute armed architect when gap is within 1-2 tiles
+          if (npc.architectArmed && !npc.roleActivated && npc.role === "architect") {
+            const gapDist = findGapDistance(npc, s.map, 2);
+            if (gapDist >= 1 && gapDist <= 2) {
+              executeArchitectBuild(npc);
+            }
+          }
         }
 
         // Kill tile check
@@ -580,7 +608,7 @@ const Index = () => {
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [getNpcAt]);
+  }, [getNpcAt, findGapDistance, executeArchitectBuild]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#08080f]">
