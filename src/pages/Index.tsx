@@ -499,7 +499,7 @@ const Index = () => {
 
       // Ultra-far landmass — continental-scale ridge behind everything
       const ultraParallax = Math.sin(now / 90000) * 5;
-      const ultraY = H * 0.38; // sits higher in the sky area
+      const ultraY = H * 0.30; // highest layer — most distant
       ctx.fillStyle = "rgba(58, 65, 88, 0.38)"; // #3a4158 at low opacity
       ctx.beginPath();
       ctx.moveTo(-20, H);
@@ -520,7 +520,7 @@ const Index = () => {
 
       // Distant central massif — large soft ridge behind terrain layers
       const massifParallax = Math.sin(now / 70000) * 6;
-      const massifBaseY = H * 0.42;
+      const massifBaseY = H * 0.36; // overlaps ridge, below it
       ctx.fillStyle = "rgba(38, 44, 58, 0.25)";
       ctx.beginPath();
       ctx.moveTo(-20, H);
@@ -541,7 +541,7 @@ const Index = () => {
 
       // Distant central hill — single large soft hill behind terrain
       const hillParallax = Math.sin(now / 80000) * 4;
-      const hillBaseY = H * 0.44;
+      const hillBaseY = H * 0.43; // overlaps massif, closer to horizon
       ctx.fillStyle = "rgba(58, 65, 88, 0.22)";
       ctx.beginPath();
       ctx.moveTo(-20, H);
