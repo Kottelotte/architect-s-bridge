@@ -354,9 +354,12 @@ const Index = () => {
         }
       } else if (s.transition === "static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
+        const rescued = s.rescued;
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
+          survivorsRef.current = rescued;
           const ns = initState(nextLevel);
+          ns.totalNpc = rescued;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
         }
