@@ -16,6 +16,7 @@ export interface NPC {
   stopsMoving: boolean;
   isSolid: boolean;
   countsAsDead: boolean;
+  architectArmed: boolean;
 }
 
 export interface LevelDef {
