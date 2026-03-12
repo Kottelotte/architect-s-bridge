@@ -446,19 +446,31 @@ const Index = () => {
 
         const isGlitching = now < npc.glitchUntil;
 
-        // Hover glow
+        // Hover glow with flickering glitch outline
         if (s.hoveredNpcId === npc.id && !isGlitching) {
           const isRoleReady = !npc.roleActivated && npc.role !== "none";
           const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
-          ctx.shadowColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
-          ctx.shadowBlur = isRoleReady ? 20 : 12;
-          ctx.strokeStyle = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#aaaaaa";
+          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
+          
+          // Flickering effect
+          const flicker = Math.sin(now / 40) * 0.3 + 0.7;
+          const glitchOffset = Math.floor(Math.sin(now / 60) * 2);
+          
+          ctx.shadowColor = glitchColor;
+          ctx.shadowBlur = isRoleReady ? 25 * flicker : 15 * flicker;
+          ctx.strokeStyle = glitchColor;
+          ctx.globalAlpha = flicker;
           ctx.lineWidth = isRoleReady ? 2.5 : 2;
-          ctx.strokeRect(npc.x - 3, npc.y - 3, NPC_W + 6, NPC_H + 6);
+          
+          // Main outline with glitch offset
+          ctx.strokeRect(npc.x - 3 + glitchOffset, npc.y - 3, NPC_W + 6, NPC_H + 6);
           if (isRoleReady) {
-            ctx.strokeRect(npc.x - 5, npc.y - 5, NPC_W + 10, NPC_H + 10);
+            // Second flickering outline offset in opposite direction
+            ctx.globalAlpha = flicker * 0.5;
+            ctx.strokeRect(npc.x - 5 - glitchOffset, npc.y - 5, NPC_W + 10, NPC_H + 10);
           }
+          ctx.globalAlpha = 1;
           ctx.shadowBlur = 0;
         }
 
