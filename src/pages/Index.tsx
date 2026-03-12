@@ -367,6 +367,25 @@ const Index = () => {
 
       // NPC update
       for (const npc of s.npcs) {
+        // Death animation update (runs even when "dead")
+        if (npc.deathPhase === "stasis") {
+          npc.deathTimer -= dt;
+          if (npc.deathTimer <= 0) {
+            npc.deathPhase = "dissolve";
+            npc.deathTimer = 700;
+          }
+          continue;
+        }
+        if (npc.deathPhase === "dissolve") {
+          npc.deathTimer -= dt;
+          if (npc.deathTimer <= 0) {
+            npc.isAlive = false;
+            npc.deathPhase = "none";
+            s.dead++;
+          }
+          continue;
+        }
+
         if (!npc.isAlive || npc.isRescued || npc.isBuilding) continue;
         if (npc.stopsMoving) continue;
 
@@ -397,11 +416,13 @@ const Index = () => {
           }
         }
 
-        // Kill tile check
+        // Kill tile check — start death animation instead of instant death
         const killRow = Math.floor((npc.y + NPC_H) / TILE);
         if (isKill(s.map, footCol1, killRow) || isKill(s.map, footCol2, killRow)) {
-          npc.isAlive = false;
-          s.dead++;
+          npc.deathPhase = "stasis";
+          npc.deathTimer = 400;
+          npc.vy = 0;
+          npc.stopsMoving = true;
           continue;
         }
 
