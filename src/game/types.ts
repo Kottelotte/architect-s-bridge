@@ -2,6 +2,8 @@ export type Role = "none" | "architect" | "anchor" | "excavator" | "vessel";
 
 export type ArchitectState = "idle" | "armed" | "building" | "finished";
 
+export type DeathPhase = "none" | "stasis" | "dissolve";
+
 export interface NPC {
   id: number;
   x: number;
@@ -19,6 +21,8 @@ export interface NPC {
   isSolid: boolean;
   countsAsDead: boolean;
   architectState: ArchitectState;
+  deathPhase: DeathPhase;
+  deathTimer: number;
 }
 
 export interface LevelDef {
