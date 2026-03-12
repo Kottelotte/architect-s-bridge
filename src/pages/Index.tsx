@@ -995,11 +995,14 @@ const Index = () => {
             bodyColor = "#0099bb";
           } else if (npc.role === "architect" && (npc.architectState === "building" || npc.architectState === "finished")) {
             bodyColor = "#006688";
-          } else if (npc.role === "anchor" && !npc.roleActivated) {
+           } else if (npc.role === "anchor" && !npc.roleActivated) {
             bodyColor = "#ff6600";
           } else if (npc.role === "anchor" && npc.roleActivated) {
-            // Anchored: darker, stationary look
             bodyColor = "#884400";
+          } else if (npc.role === "excavator" && !npc.roleActivated) {
+            bodyColor = "#ffcc00";
+          } else if (npc.role === "excavator" && npc.roleActivated) {
+            bodyColor = "#997700";
           } else {
             bodyColor = "#cccccc";
           }
