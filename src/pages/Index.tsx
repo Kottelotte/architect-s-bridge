@@ -498,9 +498,9 @@ const Index = () => {
 
         // Hover glow with flickering glitch outline
         if (s.hoveredNpcId === npc.id && !isGlitching) {
-          const isRoleReady = !npc.roleActivated && npc.role !== "none";
-          const isArchitectReady = npc.role === "architect" && !npc.roleActivated;
+          const isArchitectReady = npc.role === "architect" && npc.architectState === "idle";
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
+          const isRoleReady = isArchitectReady || isAnchorReady;
           const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
           
           // Flickering effect
