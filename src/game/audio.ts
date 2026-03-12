@@ -74,7 +74,7 @@ export function playAnchorClick() {
   lp.Q.value = 8;
 
   const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.25, ctx.currentTime);
+  noiseGain.gain.setValueAtTime(0.6, ctx.currentTime);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
   noiseSrc.connect(lp).connect(noiseGain).connect(ctx.destination);
