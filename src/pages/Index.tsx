@@ -385,8 +385,9 @@ const Index = () => {
         }
       } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Reload same level
+        // Reload same level with same survivor count
         const ns = initState(s.currentLevel);
+        ns.totalNpc = survivorsRef.current;
         ns.lastTime = s.lastTime;
         Object.assign(s, ns);
         s.transition = "none";
