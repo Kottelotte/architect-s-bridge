@@ -505,9 +505,7 @@ const Index = () => {
       // HUD
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
-      const levelLabel = s.currentLevel === 0 ? "TUTORIAL" : `LEVEL ${s.currentLevel}`;
-      ctx.fillText(levelLabel, W - 120, 14);
+      ctx.fillText(`Rescued: ${s.rescued} / ${TOTAL_NPCS}`, 8, 14);
     };
 
     const loop = (time: number) => {
