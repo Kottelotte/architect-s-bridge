@@ -224,7 +224,38 @@ export function startAmbientDrone() {
     ambientIntervals.push(id);
   };
 
-  // Layer 3: Sparse metallic ticks
+  // Layer 3: Mid-frequency texture for laptop speaker audibility
+  const scheduleMidTexture = () => {
+    if (!ambientRunning) return;
+    const delay = 900 + Math.random() * 1800;
+    const id = window.setTimeout(() => {
+      if (!ambientRunning || !ambientGain) return;
+      const c = getCtx();
+      const dur = 0.12 + Math.random() * 0.16;
+      const bufSize = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.35));
+      }
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const bp = c.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 700 + Math.random() * 650;
+      bp.Q.value = 2.2;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.08 + Math.random() * 0.05, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+      src.connect(bp).connect(g).connect(ambientGain!);
+      src.start();
+      src.stop(c.currentTime + dur);
+      scheduleMidTexture();
+    }, delay);
+    ambientIntervals.push(id);
+  };
+
+  // Layer 4: Sparse metallic ticks
   const scheduleTick = () => {
     if (!ambientRunning) return;
     const delay = 3000 + Math.random() * 8000;
