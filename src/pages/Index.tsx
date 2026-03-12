@@ -496,6 +496,26 @@ const Index = () => {
       ctx.fillRect(0, 0, W, H);
 
       // --- Distant horizon landscape ---
+
+      // Ultra-far landmass — continental-scale ridge behind everything
+      const ultraParallax = Math.sin(now / 90000) * 5;
+      const ultraY = H * 0.38; // sits higher in the sky area
+      ctx.fillStyle = "rgba(44, 51, 70, 0.35)"; // #2c3346 at low opacity
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const ultraSteps = 60;
+      for (let i = 0; i <= ultraSteps; i++) {
+        const xr = i / ultraSteps;
+        const x = W * xr + ultraParallax;
+        const y = ultraY
+          + 40 * Math.sin(xr * Math.PI * 0.8 + 0.2)
+          + 15 * Math.sin(xr * Math.PI * 1.6 + 1.0)
+          + 8 * Math.cos(xr * Math.PI * 2.4 + 0.5);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
       const horizonY = H * 0.52;
       // Subtle parallax offset based on time
       const parallaxFar = Math.sin(now / 60000) * 10;
