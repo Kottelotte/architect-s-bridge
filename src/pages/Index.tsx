@@ -541,7 +541,7 @@ const Index = () => {
 
       // Distant central hill — single large soft hill behind terrain
       const hillParallax = Math.sin(now / 80000) * 4;
-      const hillBaseY = H * 0.44;
+      const hillBaseY = H * 0.43; // overlaps massif, closer to horizon
       ctx.fillStyle = "rgba(58, 65, 88, 0.22)";
       ctx.beginPath();
       ctx.moveTo(-20, H);
