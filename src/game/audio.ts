@@ -5,49 +5,49 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
-// Metallic industrial clang for Architect bridge building
+// Metallic industrial impact for Architect bridge building (noise-only)
 export function playBuildTick() {
   const ctx = getCtx();
-  const dur = 0.06;
+  const dur = 0.05;
   const bufSize = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
   const d = buf.getChannelData(0);
-  // Sharp noise burst with very fast decay — no tonal content
+
   for (let i = 0; i < bufSize; i++) {
-    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.04));
+    const t = i / bufSize;
+    const env = Math.exp(-t * 24);
+    d[i] = (Math.random() * 2 - 1) * env;
   }
+
   const src = ctx.createBufferSource();
   src.buffer = buf;
 
-  // Tight metallic resonance — industrial clang character
-  const bp = ctx.createBiquadFilter();
-  bp.type = "bandpass";
-  bp.frequency.value = 600 + Math.random() * 300;
-  bp.Q.value = 30;
+  const lowBody = ctx.createBiquadFilter();
+  lowBody.type = "bandpass";
+  lowBody.frequency.value = 650 + Math.random() * 120;
+  lowBody.Q.value = 7;
 
-  // Higher partial for metallic shimmer
-  const bp2 = ctx.createBiquadFilter();
-  bp2.type = "bandpass";
-  bp2.frequency.value = 2200 + Math.random() * 800;
-  bp2.Q.value = 25;
+  const metalRing = ctx.createBiquadFilter();
+  metalRing.type = "bandpass";
+  metalRing.frequency.value = 1450 + Math.random() * 260;
+  metalRing.Q.value = 11;
 
-  // Low-end thud for weight
-  const lp = ctx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 300;
-  lp.Q.value = 4;
+  const air = ctx.createBiquadFilter();
+  air.type = "highpass";
+  air.frequency.value = 2200;
+  air.Q.value = 0.8;
 
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.25, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  const mix = ctx.createGain();
+  mix.gain.value = 1;
 
-  // Sum three filtered paths for layered metallic hit
-  const merge = ctx.createGain();
-  merge.gain.value = 1;
-  src.connect(bp).connect(merge);
-  src.connect(bp2).connect(merge);
-  src.connect(lp).connect(merge);
-  merge.connect(gain).connect(ctx.destination);
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.24, ctx.currentTime);
+  out.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+
+  src.connect(lowBody).connect(mix);
+  src.connect(metalRing).connect(mix);
+  src.connect(air).connect(mix);
+  mix.connect(out).connect(ctx.destination);
 
   src.start();
   src.stop(ctx.currentTime + dur);

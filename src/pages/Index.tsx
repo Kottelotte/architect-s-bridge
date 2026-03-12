@@ -86,27 +86,14 @@ const Index = () => {
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
-
-    // Must be grounded
-    const footRow = Math.floor((npc.y + NPC_H) / TILE);
-    const footCol1 = Math.floor(npc.x / TILE);
-    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
-    const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
-    if (!grounded) {
-      npc.glitchUntil = performance.now() + GLITCH_DURATION;
-      return;
-    }
-
     const gapDist = findGapDistance(npc, s.map, 4);
-    if (gapDist < 0) {
-      // No gap within 4 tiles — reject
-      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+
+    if (gapDist >= 1 && gapDist <= 4) {
+      npc.architectState = "armed";
       return;
     }
 
-    // Always arm — never build immediately on click
-    npc.architectState = "armed";
-    npc.glitchUntil = performance.now() + GLITCH_DURATION * 0.5;
+    npc.glitchUntil = performance.now() + GLITCH_DURATION;
   }, [findGapDistance]);
 
   const executeArchitectBuild = useCallback((npc: NPC) => {
@@ -115,11 +102,10 @@ const Index = () => {
     const buildRow = Math.floor((npc.y + NPC_H) / TILE);
     const startCol = Math.floor((npc.x + NPC_W / 2) / TILE);
 
-    s.pauseTimer = 400;
+    s.pauseTimer = Number.POSITIVE_INFINITY;
     npc.isBuilding = true;
     npc.architectState = "building";
     npc.vy = 0;
-    npc.roleActivated = true;
 
     let offset = 1;
     const placeNext = () => {
@@ -127,6 +113,8 @@ const Index = () => {
       const row = buildRow;
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS || isSolid(s.map, col, row)) {
         npc.isBuilding = false;
+        npc.architectState = "finished";
+        s.pauseTimer = 0;
         return;
       }
       s.map[row][col] = 1;
