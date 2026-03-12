@@ -955,8 +955,9 @@ const Index = () => {
         if (s.hoveredNpcId === npc.id && !isGlitching) {
           const isArchitectReady = npc.role === "architect" && npc.architectState === "idle";
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
-          const isRoleReady = isArchitectReady || isAnchorReady;
-          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
+          const isExcavatorReady = npc.role === "excavator" && !npc.roleActivated;
+          const isRoleReady = isArchitectReady || isAnchorReady || isExcavatorReady;
+          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : isExcavatorReady ? "#ffcc00" : "#ffffff";
           
           // Flickering effect
           const flicker = Math.sin(now / 40) * 0.3 + 0.7;
