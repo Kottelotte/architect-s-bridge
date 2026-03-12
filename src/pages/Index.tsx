@@ -39,7 +39,7 @@ function initState(levelIndex: number): GameState {
     exitRow: level.exitRow,
     spawnX: level.spawnX,
     spawnY: level.spawnY,
-    totalNpc: level.totalNpc,
+    totalNpc: TOTAL_NPCS,
     roles: level.roles,
     transition: "none",
     transitionTimer: 0,
