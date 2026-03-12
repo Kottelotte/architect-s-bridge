@@ -497,6 +497,28 @@ const Index = () => {
 
       // --- Distant horizon landscape ---
 
+      // Mega-distant ridge — furthest visible landform, behind all other layers
+      const megaParallax = Math.sin(now / 120000) * 3;
+      const megaBaseY = H * 0.22; // high on screen — very distant
+      ctx.fillStyle = "rgba(72, 78, 100, 0.22)"; // lighter, atmospheric fade
+      ctx.beginPath();
+      ctx.moveTo(-20, H);
+      const megaSteps = 70;
+      for (let i = 0; i <= megaSteps; i++) {
+        const xr = i / megaSteps;
+        const x = W * xr + megaParallax;
+        // Wide bell centered at ~0.45, spanning 60-80% of screen
+        const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
+        const tilt = (xr - 0.5) * 4; // very subtle perspective
+        const y = megaBaseY + tilt + 80 - 70 * bell
+          + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
+          + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W + 20, H);
+      ctx.closePath();
+      ctx.fill();
+
       // Ultra-far landmass — continental-scale ridge behind everything
       const ultraParallax = Math.sin(now / 90000) * 5;
       const ultraY = H * 0.30; // highest layer — most distant
