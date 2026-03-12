@@ -4,7 +4,7 @@ import {
   TILE, COLS, ROWS, W, H, NPC_W, NPC_H, SPEED, GRAVITY, MAX_FALL,
   SPAWN_INTERVAL, BRIDGE_TILES, BRIDGE_DELAY, GLITCH_DURATION,
   ANCHOR_PUSH, TYPEWRITER_SPEED, STATIC_DURATION, TRANSITION_TEXT,
-  TOTAL_NPCS, FAIL_MESSAGES,
+  TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
 import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
@@ -73,6 +73,7 @@ const Index = () => {
   const stateRef = useRef<GameState>(initState(0));
   const globalMartyrsRef = useRef<number>(0);
   const martyrPositionsRef = useRef<number[]>(generateMartyrPositions(50));
+  const survivorsRef = useRef<number>(TOTAL_NPCS);
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
     const { npcs } = stateRef.current;
@@ -165,6 +166,54 @@ const Index = () => {
     playAnchorClick();
   }, []);
 
+  const activateExcavator = useCallback((npc: NPC) => {
+    const s = stateRef.current;
+    // Must be grounded
+    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const footCol1 = Math.floor(npc.x / TILE);
+    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+    const grounded = isSolid(s.map, footCol1, footRow) || isSolid(s.map, footCol2, footRow);
+    if (!grounded) {
+      npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      return;
+    }
+
+    s.pauseTimer = Number.POSITIVE_INFINITY;
+    npc.roleActivated = true;
+    npc.stopsMoving = true;
+    npc.isBuilding = true;
+    npc.countsAsDead = true;
+    npc.glitchUntil = performance.now() + GLITCH_DURATION;
+    playAnchorClick();
+
+    const digCol = Math.floor((npc.x + NPC_W / 2) / TILE);
+    const startRow = footRow; // row below NPC's feet
+    let depth = 0;
+
+    const digNext = () => {
+      const row = startRow + depth;
+      if (depth >= EXCAVATE_DEPTH || row >= ROWS) {
+        npc.isBuilding = false;
+        s.pauseTimer = 0;
+        return;
+      }
+      // Dig this tile and adjacent tile for 2-wide shaft
+      if (row >= 0 && row < ROWS) {
+        if (digCol >= 0 && digCol < COLS && s.map[row][digCol] === 1) {
+          s.map[row][digCol] = 0;
+        }
+        const adjCol = digCol + 1;
+        if (adjCol >= 0 && adjCol < COLS && s.map[row][adjCol] === 1) {
+          s.map[row][adjCol] = 0;
+        }
+      }
+      playBuildTick();
+      depth++;
+      setTimeout(digNext, EXCAVATE_DELAY);
+    };
+    setTimeout(digNext, EXCAVATE_DELAY);
+  }, []);
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     startAmbientDrone();
     const s = stateRef.current;
@@ -198,10 +247,19 @@ const Index = () => {
       return;
     }
 
+    if (npc.role === "excavator") {
+      if (!npc.roleActivated) {
+        activateExcavator(npc);
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
     if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
-  }, [getNpcAt, activateArchitect, activateAnchor]);
+  }, [getNpcAt, activateArchitect, activateAnchor, activateExcavator]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -296,9 +354,12 @@ const Index = () => {
         }
       } else if (s.transition === "static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
+        const rescued = s.rescued;
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
+          survivorsRef.current = rescued;
           const ns = initState(nextLevel);
+          ns.totalNpc = rescued;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
         }
@@ -324,8 +385,9 @@ const Index = () => {
         }
       } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Reload same level
+        // Reload same level with same survivor count
         const ns = initState(s.currentLevel);
+        ns.totalNpc = survivorsRef.current;
         ns.lastTime = s.lastTime;
         Object.assign(s, ns);
         s.transition = "none";
@@ -359,7 +421,8 @@ const Index = () => {
       // Hover pause for unactivated role NPCs
       const hoverPause = hoveredNpc != null && (
         (hoveredNpc.role === "architect" && hoveredNpc.architectState === "idle") ||
-        (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated)
+        (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated) ||
+        (hoveredNpc.role === "excavator" && !hoveredNpc.roleActivated)
       );
 
       if (s.pauseTimer > 0) {
@@ -826,6 +889,7 @@ const Index = () => {
             let bodyColor = "#cccccc";
             if (npc.role === "architect") bodyColor = "#00ccff";
             else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
+            else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
             ctx.fillStyle = bodyColor;
             ctx.beginPath();
             ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
@@ -848,6 +912,7 @@ const Index = () => {
               let bodyColor = "#cccccc";
               if (npc.role === "architect") bodyColor = "#00ccff";
               else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
+              else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
               ctx.globalAlpha = bodyAlpha;
               ctx.fillStyle = bodyColor;
               ctx.beginPath();
@@ -892,8 +957,9 @@ const Index = () => {
         if (s.hoveredNpcId === npc.id && !isGlitching) {
           const isArchitectReady = npc.role === "architect" && npc.architectState === "idle";
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
-          const isRoleReady = isArchitectReady || isAnchorReady;
-          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : "#ffffff";
+          const isExcavatorReady = npc.role === "excavator" && !npc.roleActivated;
+          const isRoleReady = isArchitectReady || isAnchorReady || isExcavatorReady;
+          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : isExcavatorReady ? "#ffcc00" : "#ffffff";
           
           // Flickering effect
           const flicker = Math.sin(now / 40) * 0.3 + 0.7;
@@ -932,11 +998,14 @@ const Index = () => {
             bodyColor = "#0099bb";
           } else if (npc.role === "architect" && (npc.architectState === "building" || npc.architectState === "finished")) {
             bodyColor = "#006688";
-          } else if (npc.role === "anchor" && !npc.roleActivated) {
+           } else if (npc.role === "anchor" && !npc.roleActivated) {
             bodyColor = "#ff6600";
           } else if (npc.role === "anchor" && npc.roleActivated) {
-            // Anchored: darker, stationary look
             bodyColor = "#884400";
+          } else if (npc.role === "excavator" && !npc.roleActivated) {
+            bodyColor = "#ffcc00";
+          } else if (npc.role === "excavator" && npc.roleActivated) {
+            bodyColor = "#997700";
           } else {
             bodyColor = "#cccccc";
           }
@@ -961,6 +1030,19 @@ const Index = () => {
             ctx.lineTo(npc.x + NPC_W - 3, npc.y + 16);
             ctx.moveTo(npc.x + NPC_W - 3, npc.y + 8);
             ctx.lineTo(npc.x + 3, npc.y + 16);
+            ctx.stroke();
+          }
+
+          // Excavator activated: draw downward arrow on body
+          if (npc.role === "excavator" && npc.roleActivated) {
+            ctx.strokeStyle = "#ffee00";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(npc.x + NPC_W / 2, npc.y + 8);
+            ctx.lineTo(npc.x + NPC_W / 2, npc.y + 16);
+            ctx.moveTo(npc.x + NPC_W / 2 - 2, npc.y + 14);
+            ctx.lineTo(npc.x + NPC_W / 2, npc.y + 16);
+            ctx.lineTo(npc.x + NPC_W / 2 + 2, npc.y + 14);
             ctx.stroke();
           }
 
@@ -1000,7 +1082,7 @@ const Index = () => {
       // HUD
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${TOTAL_NPCS}`, 8, 14);
+      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
     };
 
     const loop = (time: number) => {
