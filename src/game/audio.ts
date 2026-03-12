@@ -8,37 +8,45 @@ function getCtx(): AudioContext {
 // Metallic industrial clang for Architect bridge building
 export function playBuildTick() {
   const ctx = getCtx();
-  const dur = 0.08;
+  const dur = 0.06;
   const bufSize = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
   const d = buf.getChannelData(0);
+  // Sharp noise burst with very fast decay — no tonal content
   for (let i = 0; i < bufSize; i++) {
-    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.08));
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.04));
   }
   const src = ctx.createBufferSource();
   src.buffer = buf;
 
-  // Metallic resonance via tight bandpass
+  // Tight metallic resonance — industrial clang character
   const bp = ctx.createBiquadFilter();
   bp.type = "bandpass";
-  bp.frequency.value = 800 + Math.random() * 400;
-  bp.Q.value = 20;
+  bp.frequency.value = 600 + Math.random() * 300;
+  bp.Q.value = 30;
 
-  // Second resonance for body
+  // Higher partial for metallic shimmer
   const bp2 = ctx.createBiquadFilter();
   bp2.type = "bandpass";
-  bp2.frequency.value = 1800 + Math.random() * 600;
-  bp2.Q.value = 15;
+  bp2.frequency.value = 2200 + Math.random() * 800;
+  bp2.Q.value = 25;
+
+  // Low-end thud for weight
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 300;
+  lp.Q.value = 4;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
+  gain.gain.setValueAtTime(0.18, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
 
-  // Split noise through both resonant filters and sum
+  // Sum three filtered paths for layered metallic hit
   const merge = ctx.createGain();
   merge.gain.value = 1;
   src.connect(bp).connect(merge);
   src.connect(bp2).connect(merge);
+  src.connect(lp).connect(merge);
   merge.connect(gain).connect(ctx.destination);
 
   src.start();
@@ -121,7 +129,7 @@ export function startTransitionHum() {
   lfoGain.connect(humGain.gain);
 
   humGain.gain.setValueAtTime(0.01, ctx.currentTime);
-  humGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 1.5);
+  humGain.gain.linearRampToValueAtTime(1.1, ctx.currentTime + 1.5);
 
   humOsc.connect(humGain);
   humOsc2.connect(humGain);
@@ -157,7 +165,7 @@ export function startAmbientDrone() {
   const ctx = getCtx();
 
   ambientGain = ctx.createGain();
-  ambientGain.gain.value = 0.25;
+  ambientGain.gain.value = 0.3;
   ambientGain.connect(ctx.destination);
 
   // Layer 1: Filtered noise base with slow modulation (distant machinery)
