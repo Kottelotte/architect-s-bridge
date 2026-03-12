@@ -8,7 +8,6 @@ function getCtx(): AudioContext {
 // Hollow metallic tick for Architect bridge building
 export function playBuildTick() {
   const ctx = getCtx();
-  // Filtered noise via short buffer
   const bufferSize = ctx.sampleRate * 0.05;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -18,13 +17,11 @@ export function playBuildTick() {
   const noise = ctx.createBufferSource();
   noise.buffer = buffer;
 
-  // Bandpass filter for metallic resonance
   const bp = ctx.createBiquadFilter();
   bp.type = "bandpass";
   bp.frequency.value = 3200 + Math.random() * 800;
   bp.Q.value = 12;
 
-  // High-pass to remove low rumble
   const hp = ctx.createBiquadFilter();
   hp.type = "highpass";
   hp.frequency.value = 1800;
@@ -113,61 +110,111 @@ export function stopTransitionHum() {
   }
 }
 
-// --- Ambient background drone ---
-let droneOscs: OscillatorNode[] = [];
-let droneGain: GainNode | null = null;
-let droneLfo: OscillatorNode | null = null;
-let droneRunning = false;
+// --- Layered ambient environment ---
+let ambientRunning = false;
+let ambientIntervals: number[] = [];
+let ambientGain: GainNode | null = null;
 
 export function startAmbientDrone() {
-  if (droneRunning) return;
-  droneRunning = true;
+  if (ambientRunning) return;
+  ambientRunning = true;
   const ctx = getCtx();
 
-  droneGain = ctx.createGain();
-  droneGain.gain.value = 0;
-  droneGain.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 3);
+  ambientGain = ctx.createGain();
+  ambientGain.gain.value = 0.04;
+  ambientGain.connect(ctx.destination);
 
-  // Low-pass filter for muffled industrial feel
-  const lp = ctx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 180;
-  lp.Q.value = 2;
+  // Layer 1: Distant electrical crackle (irregular noise bursts)
+  const scheduleCrackle = () => {
+    if (!ambientRunning) return;
+    const delay = 400 + Math.random() * 2000;
+    const id = window.setTimeout(() => {
+      if (!ambientRunning || !ambientGain) return;
+      const c = getCtx();
+      const len = 0.01 + Math.random() * 0.03;
+      const bufSize = Math.floor(c.sampleRate * len);
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.3));
+      }
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const hp = c.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 2000 + Math.random() * 3000;
+      const g = c.createGain();
+      g.gain.value = 0.02 + Math.random() * 0.03;
+      src.connect(hp).connect(g).connect(ambientGain!);
+      src.start();
+      src.stop(c.currentTime + len);
+      scheduleCrackle();
+    }, delay);
+    ambientIntervals.push(id);
+  };
 
-  // Three slightly detuned oscillators for thick drone
-  const freqs = [38, 39.2, 57.5];
-  const types: OscillatorType[] = ["sine", "sine", "triangle"];
-  for (let i = 0; i < freqs.length; i++) {
-    const osc = ctx.createOscillator();
-    osc.type = types[i];
-    osc.frequency.value = freqs[i];
-    osc.connect(lp);
-    osc.start();
-    droneOscs.push(osc);
-  }
+  // Layer 2: Subtle ventilation wind (filtered noise, long duration, irregular volume)
+  const scheduleWind = () => {
+    if (!ambientRunning) return;
+    const delay = 2000 + Math.random() * 5000;
+    const id = window.setTimeout(() => {
+      if (!ambientRunning || !ambientGain) return;
+      const c = getCtx();
+      const dur = 0.8 + Math.random() * 1.5;
+      const bufSize = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        // Shaped noise: fade in and out
+        const env = Math.sin((i / bufSize) * Math.PI);
+        d[i] = (Math.random() * 2 - 1) * env * 0.3;
+      }
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 400 + Math.random() * 300;
+      lp.Q.value = 0.5;
+      const g = c.createGain();
+      g.gain.value = 0.015 + Math.random() * 0.02;
+      src.connect(lp).connect(g).connect(ambientGain!);
+      src.start();
+      src.stop(c.currentTime + dur);
+      scheduleWind();
+    }, delay);
+    ambientIntervals.push(id);
+  };
 
-  // Slow LFO modulating filter cutoff for movement
-  droneLfo = ctx.createOscillator();
-  droneLfo.type = "sine";
-  droneLfo.frequency.value = 0.08; // Very slow
-  const lfoDepth = ctx.createGain();
-  lfoDepth.gain.value = 60;
-  droneLfo.connect(lfoDepth);
-  lfoDepth.connect(lp.frequency);
-  droneLfo.start();
+  // Layer 3: Occasional metallic ticks (very sparse)
+  const scheduleTick = () => {
+    if (!ambientRunning) return;
+    const delay = 3000 + Math.random() * 8000;
+    const id = window.setTimeout(() => {
+      if (!ambientRunning || !ambientGain) return;
+      const c = getCtx();
+      const osc = c.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = 1200 + Math.random() * 2000;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.015 + Math.random() * 0.01, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.04);
+      osc.connect(g).connect(ambientGain!);
+      osc.start();
+      osc.stop(c.currentTime + 0.04);
+      scheduleTick();
+    }, delay);
+    ambientIntervals.push(id);
+  };
 
-  lp.connect(droneGain);
-  droneGain.connect(ctx.destination);
+  scheduleCrackle();
+  scheduleWind();
+  scheduleTick();
 }
 
 export function stopAmbientDrone() {
-  if (!droneRunning) return;
-  droneRunning = false;
-  try {
-    for (const osc of droneOscs) osc.stop();
-    droneLfo?.stop();
-  } catch {}
-  droneOscs = [];
-  droneLfo = null;
-  droneGain = null;
+  if (!ambientRunning) return;
+  ambientRunning = false;
+  for (const id of ambientIntervals) clearTimeout(id);
+  ambientIntervals = [];
+  ambientGain = null;
 }

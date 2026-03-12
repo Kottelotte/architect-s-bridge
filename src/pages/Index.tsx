@@ -72,6 +72,15 @@ const Index = () => {
 
   const activateArchitect = useCallback((npc: NPC) => {
     const s = stateRef.current;
+
+    // Architect can only build when grounded
+    const footRow = Math.floor((npc.y + NPC_H) / TILE);
+    const footCol1 = Math.floor(npc.x / TILE);
+    const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+    if (!isSolid(s.map, footCol1, footRow) && !isSolid(s.map, footCol2, footRow)) {
+      return; // mid-air, do nothing
+    }
+
     s.pauseTimer = 400;
     npc.isBuilding = true;
     npc.vy = 0;
