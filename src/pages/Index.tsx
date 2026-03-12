@@ -4,7 +4,7 @@ import {
   TILE, COLS, ROWS, W, H, NPC_W, NPC_H, SPEED, GRAVITY, MAX_FALL,
   SPAWN_INTERVAL, BRIDGE_TILES, BRIDGE_DELAY, GLITCH_DURATION,
   ANCHOR_PUSH, TYPEWRITER_SPEED, STATIC_DURATION, TRANSITION_TEXT,
-  TOTAL_NPCS, FAIL_MESSAGES,
+  TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
 import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
