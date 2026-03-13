@@ -109,11 +109,7 @@ function createLevel2(): LevelDef {
   map[7][5] = 0;
   map[7][6] = 0;
 
-  // Solid fill below top floor (reduced to 2 rows instead of 3)
-  for (let r = 8; r <= 9; r++) {
-    for (let c = 1; c <= 4; c++) map[r][c] = 1;
-    for (let c = 7; c <= 25; c++) map[r][c] = 1;
-  }
+  // Top floor is 1 tile thick (row 7 only) — no fill below, revealing background sky
 
   // Right pit: cols 26-30 open with kill tiles at bottom
   for (let c = 26; c <= 30; c++) map[ROWS - 1][c] = 2;
