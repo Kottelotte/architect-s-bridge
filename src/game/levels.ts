@@ -154,9 +154,9 @@ function createLevel2(): LevelDef {
   return {
     map,
     exitCol: 28,
-    exitRow: 17,
+    exitRow: 18,
     spawnX: 15 * TILE,
-    spawnY: 6 * TILE - NPC_H,
+    spawnY: 8 * TILE - NPC_H,
     roles,
   };
 }
