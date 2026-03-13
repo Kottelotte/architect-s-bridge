@@ -12,6 +12,13 @@ function emptyMap(): number[][] {
   return map;
 }
 
+/** Safe tile write — silently ignores out-of-bounds coordinates */
+function setTile(map: number[][], r: number, c: number, v: number) {
+  if (r >= 0 && r < map.length && c >= 0 && c < (map[0]?.length ?? 0)) {
+    map[r][c] = v;
+  }
+}
+
 // Tutorial: simple gap, architect only
 function createTutorial(): LevelDef {
   const map = emptyMap();
