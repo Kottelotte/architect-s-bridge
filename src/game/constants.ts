@@ -1,6 +1,6 @@
 export const TILE = 24;
 export const COLS = 32;
-export const ROWS = 20;
+export const ROWS = 24;
 export const W = COLS * TILE;
 export const H = ROWS * TILE;
 export const NPC_W = 14;
