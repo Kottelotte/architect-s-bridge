@@ -102,42 +102,42 @@ function createLevel2(): LevelDef {
     map[r][COLS - 1] = 1;
   }
 
-  // === SECTION A: Top floor with Anchor redirect (shifted down +3, reduced fill by 1) ===
-  // Top floor: row 7, cols 1-25
-  for (let c = 1; c <= 25; c++) map[7][c] = 1;
+  // === SECTION A: Top floor with Anchor redirect (lowered +2) ===
+  // Top floor: row 9, cols 1-25
+  for (let c = 1; c <= 25; c++) map[9][c] = 1;
   // Drop hole in top floor: cols 5-6
-  map[7][5] = 0;
-  map[7][6] = 0;
+  map[9][5] = 0;
+  map[9][6] = 0;
 
-  // Top floor is 1 tile thick (row 7 only) — no fill below, revealing background sky
+  // Top floor is 1 tile thick (row 9 only) — no fill below, revealing background sky
 
   // Right pit: cols 26-30 open with kill tiles at bottom
   for (let c = 26; c <= 30; c++) map[ROWS - 1][c] = 2;
 
-  // === SECTION B: Mid platform with Excavator (shifted down +3) ===
-  // Mid floor: row 12, cols 1-15
-  for (let c = 1; c <= 15; c++) map[12][c] = 1;
+  // === SECTION B: Mid platform with Excavator (lowered +2) ===
+  // Mid floor: row 14, cols 1-15
+  for (let c = 1; c <= 15; c++) map[14][c] = 1;
 
-  // Tall wall on right blocking passage: col 16, rows 8-12
-  for (let r = 8; r <= 12; r++) map[r][16] = 1;
+  // Tall wall on right blocking passage: col 16, rows 10-14
+  for (let r = 10; r <= 14; r++) map[r][16] = 1;
 
-  // Solid fill below mid floor: rows 13-17, cols 1-15
-  for (let r = 13; r <= 17; r++) {
+  // Solid fill below mid floor: rows 15-19, cols 1-15
+  for (let r = 15; r <= 19; r++) {
     for (let c = 1; c <= 15; c++) map[r][c] = 1;
   }
 
-  // Kill tiles under wrong excavation area (cols 1-9 at row 18)
-  for (let c = 1; c <= 9; c++) map[18][c] = 2;
+  // Kill tiles under wrong excavation area (cols 1-9 at row 20)
+  for (let c = 1; c <= 9; c++) map[20][c] = 2;
 
-  // === SECTION C: Lower platform with Architect bridge (shifted down +3) ===
-  // Safe landing from correct excavation: row 18, cols 10-20
-  for (let c = 10; c <= 20; c++) map[18][c] = 1;
+  // === SECTION C: Lower platform with Architect bridge (lowered +1) ===
+  // Safe landing from correct excavation: row 19, cols 10-20
+  for (let c = 10; c <= 20; c++) map[19][c] = 1;
   // Gap: cols 21-23 (needs Architect bridge)
-  // Exit platform: row 18, cols 24-30
-  for (let c = 24; c <= 30; c++) map[18][c] = 1;
+  // Exit platform: row 19, cols 24-30
+  for (let c = 24; c <= 30; c++) map[19][c] = 1;
 
   // Solid fill below lower platforms
-  for (let r = 19; r < ROWS; r++) {
+  for (let r = 20; r < ROWS; r++) {
     for (let c = 10; c <= 20; c++) map[r][c] = 1;
     for (let c = 24; c <= 30; c++) map[r][c] = 1;
   }
