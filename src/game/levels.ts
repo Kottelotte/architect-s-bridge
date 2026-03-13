@@ -110,16 +110,17 @@ function createLevel2(): LevelDef {
   }
 
   // === SECTION A: Top floor with Anchor redirect ===
-  // Top floor: row 9, cols 1-25 (with sky opening at cols 12-15)
-  for (let c = 1; c <= 25; c++) setTile(map, 9, c, 1);
+  // Top floor: row 9, cols 1-28 (extended right — NPCs walk toward deadly drop)
+  for (let c = 1; c <= 28; c++) setTile(map, 9, c, 1);
   // Drop hole in top floor: cols 5-6
   setTile(map, 9, 5, 0);
   setTile(map, 9, 6, 0);
-  // Sky opening: remove cols 12-15 to reveal background
-  for (let c = 12; c <= 15; c++) setTile(map, 9, c, 0);
+  // Sky opening: cols 2-3 (NPCs never reach here — they fall through drop hole first)
+  setTile(map, 9, 2, 0);
+  setTile(map, 9, 3, 0);
 
-  // Right pit: cols 26-30 open with kill tiles at bottom
-  for (let c = 26; c <= 30; c++) setTile(map, ROWS - 1, c, 2);
+  // Kill pit right side: cols 29-30 open with kill tiles at bottom
+  for (let c = 29; c <= 30; c++) setTile(map, ROWS - 1, c, 2);
 
   // === SECTION B: Mid platform with Excavator ===
   // Mid floor: row 14, cols 1-15
