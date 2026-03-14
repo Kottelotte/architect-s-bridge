@@ -199,41 +199,44 @@ function createLevel3(): LevelDef {
   for (let r = 9; r <= 12; r++) setTile(map, r, 29, 1);
 
   // === SECTION 3: Excavator dig zone ===
-  // After Anchor reverses direction, NPCs walk left on mid platform
   // Diggable column at cols 12-13, rows 14-18 (5 rows deep)
+  // Ends exactly at row 19 platform — no terrain below to stop early
   for (let r = 14; r <= 18; r++) {
     for (let c = 12; c <= 13; c++) setTile(map, r, c, 1);
   }
 
+  // Wall to prevent NPCs walking left off bottom platform
+  for (let r = 14; r <= 18; r++) setTile(map, r, 5, 1);
+
   // === SECTION 4: Bottom platform (Vessel + Architect) ===
-  // Row 19, cols 5-28 — NPCs land here after Excavator shaft
   // Left portion: cols 5-11
   for (let c = 5; c <= 11; c++) setTile(map, 19, c, 1);
 
   // Kill zone: cols 12-18 on row 19 — Vessel must sacrifice
   for (let c = 12; c <= 18; c++) setTile(map, 19, c, 2);
 
-  // Post-kill-zone platform: cols 19-23
-  for (let c = 19; c <= 23; c++) setTile(map, 19, c, 1);
+  // Post-kill-zone platform: cols 19-25
+  for (let c = 19; c <= 25; c++) setTile(map, 19, c, 1);
 
-  // Architect gap: cols 24-26 (empty, needs bridge)
+  // Architect gap: cols 26-29 (4-wide, needs bridge)
+  // Nothing below — falling here is fatal
 
-  // Exit platform: cols 27-30, row 19
-  for (let c = 27; c <= 30; c++) setTile(map, 19, c, 1);
+  // Exit: single tile at col 30 (right edge), row 19
+  // Right wall removed at this row so exit stands alone
+  setTile(map, COLS - 1, 19, 0); // clear right wall at exit row
+  setTile(map, 19, 30, 1);       // lone exit tile
 
-  // Solid fill below bottom platforms
+  // Solid fill below left & post-vessel platforms only
   for (let r = 20; r < ROWS; r++) {
     for (let c = 5; c <= 11; c++) setTile(map, r, c, 1);
-    for (let c = 19; c <= 23; c++) setTile(map, r, c, 1);
-    for (let c = 27; c <= 30; c++) setTile(map, r, c, 1);
+    for (let c = 19; c <= 25; c++) setTile(map, r, c, 1);
   }
+  // NO solid fill below exit tile (col 30) — Excavator can't dig to it
 
-  // Kill tiles at bottom of gaps
+  // Kill tiles at bottom of all gaps/pits
   for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);   // left death pit
-  for (let c = 24; c <= 26; c++) setTile(map, ROWS - 1, c, 2); // architect gap bottom
-
-  // Wall to prevent NPCs walking left off bottom platform
-  for (let r = 14; r <= 18; r++) setTile(map, r, 5, 1);
+  for (let c = 12; c <= 18; c++) setTile(map, ROWS - 1, c, 2); // under kill zone
+  for (let c = 26; c <= 30; c++) setTile(map, ROWS - 1, c, 2); // architect gap + exit underside
 
   // Roles: Anchor → Excavator → Vessel → Architect
   const roles: Role[] = Array(12).fill("none") as Role[];
@@ -244,7 +247,7 @@ function createLevel3(): LevelDef {
 
   return {
     map,
-    exitCol: 28,
+    exitCol: 30,
     exitRow: 18,
     spawnX: 3 * TILE,
     spawnY: 7 * TILE - NPC_H,
