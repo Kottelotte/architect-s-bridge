@@ -229,7 +229,7 @@ function createLevel3(): LevelDef {
 
   // Kill tiles at bottom of all gaps/pits
   for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);   // left death pit
-  for (let c = 12; c <= 18; c++) setTile(map, ROWS - 1, c, 2); // under kill zone
+  for (let c = 16; c <= 20; c++) setTile(map, ROWS - 1, c, 2); // under kill zone
   for (let c = 26; c <= 30; c++) setTile(map, ROWS - 1, c, 2); // architect gap + exit underside
 
   // Roles: Anchor → Excavator → Vessel → Architect
