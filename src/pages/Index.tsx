@@ -436,9 +436,10 @@ const Index = () => {
         if (s.transitionCharIndex >= targetText.length) {
           s.transitionTimer -= dt;
           if (s.transitionTimer <= -600) {
-          s.transition = "fv_static";
-          s.transitionTimer = STATIC_DURATION;
-          startTransitionHum();
+            s.transition = "fv_static";
+            s.transitionTimer = STATIC_DURATION;
+            startTransitionHum();
+          }
         }
       } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
         stopTransitionHum();
