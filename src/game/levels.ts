@@ -128,12 +128,16 @@ function createLevel2(): LevelDef {
   // Left death pit: cols 1-2 have no platform, kill tiles at bottom
   for (let c = 1; c <= 2; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Excavator fall hole: cols 7-8 — single controlled drop point
-  setTile(map, 12, 7, 0);
-  setTile(map, 12, 8, 0);
+  // Excavator fall hole: cols 3-4 — shifted left for more observation time
+  setTile(map, 12, 3, 0);
+  setTile(map, 12, 4, 0);
+
+  // Headroom: remove ceiling tiles above excavator chamber landing zone
+  // Opens rows 12 at cols 5-8 so NPCs have vertical space after falling
+  for (let c = 5; c <= 8; c++) setTile(map, 12, c, 0);
 
   // === SECTION B: Mid platform (Excavator) ===
-  // NPCs fall through hole at cols 7-8, land on mid platform
+  // NPCs fall through hole at cols 3-4, land on mid platform
   // Mid floor: row 17, cols 3-15
   for (let c = 3; c <= 15; c++) setTile(map, 17, c, 1);
 
@@ -150,25 +154,25 @@ function createLevel2(): LevelDef {
   for (let c = 3; c <= 9; c++) setTile(map, ROWS - 1, c, 2);
 
   // === SECTION C: Lower platform (Architect bridge) ===
-  // Safe landing from correct excavation (cols 10-11 shaft): row 22, cols 10-20
-  for (let c = 10; c <= 20; c++) setTile(map, 22, c, 1);
+  // Extended walking space: cols 10-23 so NPCs walk several tiles before hitting wall
+  for (let c = 10; c <= 23; c++) setTile(map, 22, c, 1);
 
-  // Blocking wall: col 20, rows 13-21 — prevents shortcut to exit
-  for (let r = 13; r <= 21; r++) setTile(map, r, 20, 1);
+  // Blocking wall: col 23, rows 13-21 — moved right for more walking/realization space
+  for (let r = 13; r <= 21; r++) setTile(map, r, 23, 1);
 
-  // Gap: cols 21-23 (needs Architect bridge)
+  // Gap: cols 24-26 (needs Architect bridge)
 
-  // Exit platform: row 22, cols 24-30
-  for (let c = 24; c <= 30; c++) setTile(map, 22, c, 1);
+  // Exit platform: row 22, cols 27-30
+  for (let c = 27; c <= 30; c++) setTile(map, 22, c, 1);
 
   // Solid fill below lower platforms
   for (let r = 23; r < ROWS; r++) {
-    for (let c = 10; c <= 20; c++) setTile(map, r, c, 1);
-    for (let c = 24; c <= 30; c++) setTile(map, r, c, 1);
+    for (let c = 10; c <= 23; c++) setTile(map, r, c, 1);
+    for (let c = 27; c <= 30; c++) setTile(map, r, c, 1);
   }
 
   // Kill tiles in Architect gap at bottom
-  for (let c = 21; c <= 23; c++) setTile(map, ROWS - 1, c, 2);
+  for (let c = 24; c <= 26; c++) setTile(map, ROWS - 1, c, 2);
 
   // Roles: NPC 0 = none (dies in death gate), 1 = anchor, 2 = excavator, 3 = architect
   const roles: Role[] = Array(12).fill("none") as Role[];
