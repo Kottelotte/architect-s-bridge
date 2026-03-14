@@ -199,29 +199,29 @@ function createLevel3(): LevelDef {
   for (let r = 9; r <= 12; r++) setTile(map, r, 29, 1);
 
   // === SECTION 3: Excavator dig zone ===
-  // Diggable column at cols 12-13, rows 14-18 (5 rows deep)
-  // Ends exactly at row 19 platform — no terrain below to stop early
-  for (let r = 14; r <= 18; r++) {
+  // Diggable column at cols 12-13, rows 14-19 (6 rows deep)
+  // Ends exactly at row 20 platform — no terrain below to stop early
+  for (let r = 14; r <= 19; r++) {
     for (let c = 12; c <= 13; c++) setTile(map, r, c, 1);
   }
 
   // Wall to prevent NPCs walking left off bottom platform
-  for (let r = 14; r <= 18; r++) setTile(map, r, 5, 1);
+  for (let r = 14; r <= 19; r++) setTile(map, r, 5, 1);
 
   // === SECTION 4: Bottom platform (Vessel + Architect) ===
-  // Safe landing + walk zone: cols 5-15 at row 19
+  // Safe landing + walk zone: cols 5-15 at row 20
   // NPCs land at cols 12-13 after Excavator dig, then walk right through 14-15
-  for (let c = 5; c <= 15; c++) setTile(map, 19, c, 1);
+  for (let c = 5; c <= 15; c++) setTile(map, 20, c, 1);
 
-  // Kill zone: cols 16-20 on row 19 — several tiles away from landing
+  // Kill zone: cols 16-20 on row 20 — several tiles away from landing
   // Player has time to activate Vessel while NPCs walk cols 13→15
-  for (let c = 16; c <= 20; c++) setTile(map, 19, c, 2);
+  for (let c = 16; c <= 20; c++) setTile(map, 20, c, 2);
 
   // Post-kill-zone platform: cols 21-25
-  for (let c = 21; c <= 25; c++) setTile(map, 19, c, 1);
+  for (let c = 21; c <= 25; c++) setTile(map, 20, c, 1);
 
   // Solid fill below safe landing & post-vessel platforms only
-  for (let r = 20; r < ROWS; r++) {
+  for (let r = 21; r < ROWS; r++) {
     for (let c = 5; c <= 15; c++) setTile(map, r, c, 1);
     for (let c = 21; c <= 25; c++) setTile(map, r, c, 1);
   }
