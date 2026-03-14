@@ -940,10 +940,11 @@ const Index = () => {
             // Body fades as more particles spawn
             const bodyAlpha = Math.max(0, 1 - progress * 1.2);
             if (bodyAlpha > 0) {
-              let bodyColor = "#cccccc";
+               let bodyColor = "#cccccc";
               if (npc.role === "architect") bodyColor = "#00ccff";
               else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
               else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
+              else if (npc.role === "vessel") bodyColor = npc.roleActivated ? "#882299" : "#cc44ff";
               ctx.globalAlpha = bodyAlpha;
               ctx.fillStyle = bodyColor;
               ctx.beginPath();

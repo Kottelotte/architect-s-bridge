@@ -175,7 +175,62 @@ function createLevel2(): LevelDef {
   };
 }
 
-export const LEVELS: LevelDef[] = [createTutorial(), createLevel1(), createLevel2()];
+// Level 3: Vessel introduction — sacrifice one NPC to cross kill tiles
+function createLevel3(): LevelDef {
+  const map = emptyMap();
+
+  // Side walls
+  for (let r = 0; r < ROWS; r++) {
+    map[r][0] = 1;
+    map[r][COLS - 1] = 1;
+  }
+
+  // === Spawn platform: row 8, cols 1-18 ===
+  for (let c = 1; c <= 18; c++) setTile(map, 8, c, 1);
+  for (let r = 9; r < ROWS; r++) {
+    for (let c = 1; c <= 10; c++) setTile(map, r, c, 1);
+  }
+
+  // Fall hole: cols 11-13 (NPCs drop through)
+  // cols 11-13 have no floor at row 8 already since we only built up to 18
+  // Actually clear the hole explicitly
+  for (let c = 11; c <= 13; c++) setTile(map, 8, c, 0);
+
+  // === Lower platform: row 16, cols 5-28 ===
+  for (let c = 5; c <= 28; c++) setTile(map, 16, c, 1);
+  // Solid fill below
+  for (let r = 17; r < ROWS; r++) {
+    for (let c = 5; c <= 28; c++) setTile(map, r, c, 1);
+  }
+
+  // Wall under fall hole left edge to prevent walking back left
+  for (let r = 9; r <= 15; r++) setTile(map, r, 11, 1);
+
+  // === Kill tile strip on lower platform: row 15 (surface), cols 17-21 ===
+  // Remove floor tiles and place kill tiles where NPCs walk
+  for (let c = 17; c <= 21; c++) {
+    setTile(map, 16, c, 2); // kill tiles on the walking surface
+  }
+
+  // Kill tiles at bottom of fall area for wrong drops
+  for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);
+
+  // Exit platform on right side
+  // Exit is at row 15 on top of the solid area
+  const roles: Role[] = Array(12).fill("none") as Role[];
+  roles[1] = "vessel";
+
+  return {
+    map,
+    exitCol: 26,
+    exitRow: 15,
+    spawnX: 3 * TILE,
+    spawnY: 7 * TILE - NPC_H,
+    roles,
+  };
+}
+
+export const LEVELS: LevelDef[] = [createTutorial(), createLevel1(), createLevel2(), createLevel3()];
 
 export function cloneLevelMap(level: LevelDef): number[][] {
   return level.map.map((row) => [...row]);
