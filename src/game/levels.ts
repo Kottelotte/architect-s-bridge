@@ -96,10 +96,10 @@ function createLevel1(): LevelDef {
   };
 }
 
-// Level 2: Anchor + Excavator + Architect
-// Flow: Spawn mid-right on top floor → walk right → open pit → Anchor redirects left
-//       → fall through drop hole → mid platform → Excavator digs shaft down
-//       → lower platform → gap → Architect bridges → exit
+// Level 2: Anchor → Excavator → Architect
+// Flow: Spawn mid-platform → walk RIGHT toward death pit → Anchor stops march
+//       → reversed NPCs walk LEFT → fall through left hole → mid platform
+//       → Excavator digs shaft down → lower platform → Architect bridges gap → exit
 function createLevel2(): LevelDef {
   const map = emptyMap();
 
@@ -109,42 +109,58 @@ function createLevel2(): LevelDef {
     map[r][COLS - 1] = 1;
   }
 
-  // === SECTION A: Top floor with Anchor redirect ===
-  // Top floor: row 9, cols 1-28 (extended right — NPCs walk toward deadly drop)
-  for (let c = 1; c <= 28; c++) setTile(map, 9, c, 1);
-  // Drop hole in top floor: cols 5-6
-  setTile(map, 9, 5, 0);
-  setTile(map, 9, 6, 0);
-  // Sky opening: cols 2-3 (NPCs never reach here — they fall through drop hole first)
+  // === SECTION A: Top platform with death wall (Anchor teaching) ===
+  // Continuous solid platform: row 9, cols 1-26
+  for (let c = 1; c <= 26; c++) setTile(map, 9, c, 1);
+
+  // Sky opening: cols 2-3 (visual — NPCs walk right first, never reach here)
   setTile(map, 9, 2, 0);
   setTile(map, 9, 3, 0);
 
-  // Kill pit right side: cols 29-30 open with kill tiles at bottom
-  for (let c = 29; c <= 30; c++) setTile(map, ROWS - 1, c, 2);
+  // Death pit right side: cols 27-28 are open with kill tiles at bottom
+  // First NPC walks off col 26 edge → falls → dies on kill tiles
+  // This teaches the player they MUST use Anchor to stop the march
+  for (let r = 10; r <= ROWS - 2; r++) {
+    setTile(map, r, 27, 0);
+    setTile(map, r, 28, 0);
+  }
+  // Tall visual wall at col 29 (beside side wall) to frame the death pit
+  for (let r = 5; r <= ROWS - 2; r++) setTile(map, r, 29, 1);
+  // Kill tiles at bottom of death pit
+  for (let c = 27; c <= 29; c++) setTile(map, ROWS - 1, c, 2);
 
-  // === SECTION B: Mid platform with Excavator ===
+  // Left fall hole: cols 7-8 removed from top platform
+  // After Anchor redirects NPCs left, they fall through here
+  setTile(map, 9, 7, 0);
+  setTile(map, 9, 8, 0);
+
+  // === SECTION B: Mid platform (Excavator) ===
+  // NPCs land here after falling through left hole
   // Mid floor: row 14, cols 1-15
   for (let c = 1; c <= 15; c++) setTile(map, 14, c, 1);
 
-  // Tall wall on right blocking passage: col 16, rows 10-14
+  // Wall blocking rightward escape from mid level: col 16, rows 10-14
   for (let r = 10; r <= 14; r++) setTile(map, r, 16, 1);
 
-  // Solid fill below mid floor: rows 15-19, cols 1-15
+  // Solid fill below mid floor (Excavator digs through this)
+  // rows 15-19, cols 1-15
   for (let r = 15; r <= 19; r++) {
     for (let c = 1; c <= 15; c++) setTile(map, r, c, 1);
   }
 
-  // Kill tiles under wrong excavation area (cols 1-9 at row 20)
+  // Kill tiles under wrong excavation area (cols 1-9)
+  // If Excavator digs too far left, NPCs fall to death
   for (let c = 1; c <= 9; c++) setTile(map, 20, c, 2);
 
-  // === SECTION C: Lower platform with Architect bridge ===
-  // Safe landing from correct excavation: row 19, cols 10-20
+  // === SECTION C: Lower platform (Architect bridge) ===
+  // Safe landing from correct excavation (cols 10-11 shaft): row 19, cols 10-20
   for (let c = 10; c <= 20; c++) setTile(map, 19, c, 1);
 
-  // Blocking wall: col 20, rows 10-18 — prevents aerial shortcut to exit
+  // Blocking wall: col 20, rows 10-18 — prevents shortcut to exit
   for (let r = 10; r <= 18; r++) setTile(map, r, 20, 1);
 
   // Gap: cols 21-23 (needs Architect bridge)
+
   // Exit platform: row 19, cols 24-30
   for (let c = 24; c <= 30; c++) setTile(map, 19, c, 1);
 
@@ -154,10 +170,9 @@ function createLevel2(): LevelDef {
     for (let c = 24; c <= 30; c++) setTile(map, r, c, 1);
   }
 
-  // Kill tiles in gap at bottom
+  // Kill tiles in Architect gap at bottom
   for (let c = 21; c <= 23; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Roles: early indices so they're available even with few survivors
   const roles: Role[] = Array(12).fill("none") as Role[];
   roles[0] = "anchor";
   roles[1] = "excavator";
