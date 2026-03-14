@@ -96,65 +96,58 @@ function createLevel1(): LevelDef {
   };
 }
 
-// Level 2: Death wall → Anchor → Excavator → Architect
-// Flow: Spawn mid-platform → walk RIGHT into death wall (first NPC dies)
-//       → Anchor redirects remaining NPCs LEFT → fall through left hole
-//       → mid platform → Excavator digs shaft → lower platform
-//       → Architect bridges gap → exit
-// All geometry shifted +3 rows down to reveal more background horizon.
+// Level 2: Death gate (in right wall) → Anchor redirect → Excavator drop → Architect bridge → Exit
+// Layout: open airy design with minimal solid mass. Death gate integrated into right boundary.
+// Left edge is a fatal drop. Single controlled fall hole for Excavator section.
+// All geometry shifted +3 rows down for background horizon visibility.
 function createLevel2(): LevelDef {
   const map = emptyMap();
 
-  // Side walls
+  // === Boundary walls ===
+  // Left wall: col 0 (solid except leave cols 1-2 open for left death pit)
   for (let r = 0; r < ROWS; r++) {
     map[r][0] = 1;
+  }
+  // Right wall: col 31 — solid everywhere EXCEPT the death gate zone
+  for (let r = 0; r < ROWS; r++) {
     map[r][COLS - 1] = 1;
   }
+  // Death gate: integrate kill zone into right boundary wall
+  // 4 tiles high at NPC walking height (rows 9-12)
+  for (let r = 9; r <= 12; r++) setTile(map, r, COLS - 1, 2);
 
-  // === SECTION A: Spawn platform + Death wall (Anchor teaching) ===
-  // Continuous solid platform: row 12, cols 1-24 (NO holes)
-  for (let c = 1; c <= 24; c++) setTile(map, 12, c, 1);
+  // === SECTION A: Spawn platform + Death gate ===
+  // Continuous top platform: row 12, cols 3-30
+  // Cols 1-2 are open (left death pit), platform starts at col 3
+  for (let c = 3; c <= 30; c++) setTile(map, 12, c, 1);
 
-  // Solid fill under spawn platform so NPCs cannot fall
-  for (let r = 13; r <= 16; r++) {
-    for (let c = 1; c <= 24; c++) setTile(map, r, c, 1);
-  }
+  // NO large solid block under platform — keep it open and airy
+  // Only a thin lip under the platform edges for visual grounding
+  // (the platform itself at row 12 is the only solid)
 
-  // Death wall: tall solid wall at cols 25-26, rows 8-12
-  for (let r = 8; r <= 12; r++) {
-    setTile(map, r, 25, 1);
-    setTile(map, r, 26, 1);
-  }
-  // Kill zone inside the death wall face: col 25, rows 9-12 (4 tiles high)
-  // First NPC walks right into this and dies on contact
-  for (let r = 9; r <= 12; r++) setTile(map, r, 25, 2);
+  // Left death pit: cols 1-2 have no platform, kill tiles at bottom
+  for (let c = 1; c <= 2; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Left fall hole: cols 5-6 removed from spawn platform
-  // After Anchor redirects NPCs left, they fall through here
-  setTile(map, 12, 5, 0);
-  setTile(map, 12, 6, 0);
-  // Clear fill under the hole so NPCs can fall through
-  for (let r = 13; r <= 16; r++) {
-    setTile(map, r, 5, 0);
-    setTile(map, r, 6, 0);
-  }
+  // Excavator fall hole: cols 7-8 — single controlled drop point
+  setTile(map, 12, 7, 0);
+  setTile(map, 12, 8, 0);
 
   // === SECTION B: Mid platform (Excavator) ===
-  // NPCs land here after falling through left hole
-  // Mid floor: row 17, cols 1-15
-  for (let c = 1; c <= 15; c++) setTile(map, 17, c, 1);
+  // NPCs fall through hole at cols 7-8, land on mid platform
+  // Mid floor: row 17, cols 3-15
+  for (let c = 3; c <= 15; c++) setTile(map, 17, c, 1);
 
   // Wall blocking rightward escape from mid level: col 16, rows 13-17
   for (let r = 13; r <= 17; r++) setTile(map, r, 16, 1);
 
   // Solid fill below mid floor (Excavator digs through this)
-  // rows 18-22, cols 1-15
+  // rows 18-22, cols 3-15
   for (let r = 18; r <= 22; r++) {
-    for (let c = 1; c <= 15; c++) setTile(map, r, c, 1);
+    for (let c = 3; c <= 15; c++) setTile(map, r, c, 1);
   }
 
-  // Kill tiles under wrong excavation area (cols 1-9)
-  for (let c = 1; c <= 9; c++) setTile(map, ROWS - 1, c, 2);
+  // Kill tiles under wrong excavation area (cols 3-9)
+  for (let c = 3; c <= 9; c++) setTile(map, ROWS - 1, c, 2);
 
   // === SECTION C: Lower platform (Architect bridge) ===
   // Safe landing from correct excavation (cols 10-11 shaft): row 22, cols 10-20
@@ -177,10 +170,11 @@ function createLevel2(): LevelDef {
   // Kill tiles in Architect gap at bottom
   for (let c = 21; c <= 23; c++) setTile(map, ROWS - 1, c, 2);
 
+  // Roles: NPC 0 = none (dies in death gate), 1 = anchor, 2 = excavator, 3 = architect
   const roles: Role[] = Array(12).fill("none") as Role[];
-  roles[0] = "anchor";
-  roles[1] = "excavator";
-  roles[2] = "architect";
+  roles[1] = "anchor";
+  roles[2] = "excavator";
+  roles[3] = "architect";
 
   return {
     map,
