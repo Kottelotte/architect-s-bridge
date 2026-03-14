@@ -2,7 +2,7 @@ export type Role = "none" | "architect" | "anchor" | "excavator" | "vessel";
 
 export type ArchitectState = "idle" | "armed" | "building" | "finished";
 
-export type DeathPhase = "none" | "stasis" | "dissolve";
+export type DeathPhase = "none" | "stasis" | "dissolve" | "vessel_freeze" | "vessel_slice" | "vessel_stretch";
 
 export interface NPC {
   id: number;
