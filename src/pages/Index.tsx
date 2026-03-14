@@ -1033,10 +1033,14 @@ const Index = () => {
             bodyColor = "#ff6600";
           } else if (npc.role === "anchor" && npc.roleActivated) {
             bodyColor = "#884400";
-          } else if (npc.role === "excavator" && !npc.roleActivated) {
+           } else if (npc.role === "excavator" && !npc.roleActivated) {
             bodyColor = "#ffcc00";
           } else if (npc.role === "excavator" && npc.roleActivated) {
             bodyColor = "#997700";
+          } else if (npc.role === "vessel" && !npc.roleActivated) {
+            bodyColor = "#cc44ff";
+          } else if (npc.role === "vessel" && npc.roleActivated) {
+            bodyColor = "#882299";
           } else {
             bodyColor = "#cccccc";
           }
