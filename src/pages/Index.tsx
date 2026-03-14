@@ -501,15 +501,22 @@ const Index = () => {
           if (npc.deathTimer <= 0) {
             npc.deathPhase = "vessel_stretch";
             npc.deathTimer = 400;
-            // Convert kill tiles to walkable terrain at stretch start
-            const footCol1 = Math.floor(npc.x / TILE);
-            const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+            // Convert entire connected kill tile strip to walkable terrain
+            const impactCol = Math.floor((npc.x + NPC_W / 2) / TILE);
             const killRow = Math.floor((npc.y + NPC_H) / TILE);
-            if (footCol1 >= 0 && footCol1 < COLS && killRow >= 0 && killRow < ROWS) {
-              s.map[killRow][footCol1] = 1;
-            }
-            if (footCol2 >= 0 && footCol2 < COLS && killRow >= 0 && killRow < ROWS && footCol2 !== footCol1) {
-              s.map[killRow][footCol2] = 1;
+            if (killRow >= 0 && killRow < ROWS) {
+              // Expand left
+              let startC = impactCol;
+              while (startC > 0 && s.map[killRow][startC - 1] === 2) startC--;
+              // Expand right
+              let endC = impactCol;
+              while (endC < COLS - 1 && s.map[killRow][endC + 1] === 2) endC++;
+              // Convert all connected kill tiles
+              for (let c = startC; c <= endC; c++) {
+                s.map[killRow][c] = 1;
+              }
+              npc.vesselBridgeStart = startC;
+              npc.vesselBridgeEnd = endC;
             }
             playBuildTick();
           }
