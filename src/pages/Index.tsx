@@ -711,16 +711,18 @@ const Index = () => {
       if (s.transition === "fv_scream") {
         ctx.fillStyle = "#0a0a12";
         ctx.fillRect(0, 0, W, H);
-        // Flickering dark red text
+        // Typewriter "NOT YET" in large dark red
+        const targetText = "NOT YET";
         const flicker = 0.7 + Math.random() * 0.3;
         ctx.fillStyle = `rgba(139, 0, 0, ${flicker})`;
-        ctx.font = "bold 24px monospace";
-        const textW = ctx.measureText(s.transitionText).width;
-        ctx.fillText(s.transitionText, (W - textW) / 2, H / 2);
+        ctx.font = "bold 36px monospace";
+        const displayText = s.transitionText + (Math.floor(now / 250) % 2 === 0 ? "█" : "");
+        const textW = ctx.measureText(displayText).width;
+        ctx.fillText(displayText, (W - textW) / 2, H / 2);
         // Scanline distortion
-        for (let y = 0; y < H; y += 6) {
-          if (Math.random() > 0.7) {
-            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.08})`;
+        for (let y = 0; y < H; y += 4) {
+          if (Math.random() > 0.6) {
+            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.1})`;
             ctx.fillRect(0, y, W, 2);
           }
         }
