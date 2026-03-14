@@ -454,6 +454,9 @@ const Index = () => {
           const anyRescued = s.npcs.some((n) => n.isRescued);
           if (!anyRescued) {
             startTransition(s, true);
+          } else if (s.currentLevel === 1 && s.rescued < 7) {
+            s.failMessage = "Not enough.";
+            startTransition(s, true);
           } else {
             startTransition(s);
           }
