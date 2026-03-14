@@ -209,33 +209,27 @@ function createLevel3(): LevelDef {
   for (let r = 14; r <= 18; r++) setTile(map, r, 5, 1);
 
   // === SECTION 4: Bottom platform (Vessel + Architect) ===
-  // Left portion: cols 5-11
-  for (let c = 5; c <= 11; c++) setTile(map, 19, c, 1);
+  // Safe landing + walk zone: cols 5-15 at row 19
+  // NPCs land at cols 12-13 after Excavator dig, then walk right through 14-15
+  for (let c = 5; c <= 15; c++) setTile(map, 19, c, 1);
 
-  // Kill zone: cols 12-18 on row 19 — Vessel must sacrifice
-  for (let c = 12; c <= 18; c++) setTile(map, 19, c, 2);
+  // Kill zone: cols 16-20 on row 19 — several tiles away from landing
+  // Player has time to activate Vessel while NPCs walk cols 13→15
+  for (let c = 16; c <= 20; c++) setTile(map, 19, c, 2);
 
-  // Post-kill-zone platform: cols 19-25
-  for (let c = 19; c <= 25; c++) setTile(map, 19, c, 1);
+  // Post-kill-zone platform: cols 21-25
+  for (let c = 21; c <= 25; c++) setTile(map, 19, c, 1);
 
-  // Architect gap: cols 26-29 (4-wide, needs bridge)
-  // Nothing below — falling here is fatal
-
-  // Exit: single tile at col 30 (right edge), row 19
-  // Right wall removed at this row so exit stands alone
-  setTile(map, COLS - 1, 19, 0); // clear right wall at exit row
-  setTile(map, 19, 30, 1);       // lone exit tile
-
-  // Solid fill below left & post-vessel platforms only
+  // Solid fill below safe landing & post-vessel platforms only
   for (let r = 20; r < ROWS; r++) {
-    for (let c = 5; c <= 11; c++) setTile(map, r, c, 1);
-    for (let c = 19; c <= 25; c++) setTile(map, r, c, 1);
+    for (let c = 5; c <= 15; c++) setTile(map, r, c, 1);
+    for (let c = 21; c <= 25; c++) setTile(map, r, c, 1);
   }
   // NO solid fill below exit tile (col 30) — Excavator can't dig to it
 
   // Kill tiles at bottom of all gaps/pits
   for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);   // left death pit
-  for (let c = 12; c <= 18; c++) setTile(map, ROWS - 1, c, 2); // under kill zone
+  for (let c = 16; c <= 20; c++) setTile(map, ROWS - 1, c, 2); // under kill zone
   for (let c = 26; c <= 30; c++) setTile(map, ROWS - 1, c, 2); // architect gap + exit underside
 
   // Roles: Anchor → Excavator → Vessel → Architect
