@@ -44,6 +44,9 @@ export type TransitionPhase =
   | "fail_static"
   | "fail_typewriter"
   | "fail_static2"
+  | "fv_freeze"
+  | "fv_scream"
+  | "fv_static"
   | "done";
 
 export interface GameState {

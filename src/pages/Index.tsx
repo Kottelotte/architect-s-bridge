@@ -7,7 +7,7 @@ import {
   TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
-import { playBuildTick, playAnchorClick, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
+import { playBuildTick, playAnchorClick, playScream, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -52,7 +52,7 @@ function initState(levelIndex: number): GameState {
 
 // --- COMPONENT ---
 // Martyr horizon visibility caps per level index
-const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3 };
+const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3 };
 // Seeded pseudo-random positions for martyrs (asymmetric, clustered)
 function generateMartyrPositions(count: number): number[] {
   const positions: number[] = [];
@@ -408,6 +408,56 @@ const Index = () => {
         s.transition = "none";
         s.inputDisabled = false;
       }
+      // False victory phases
+      else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
+        // Play scream and show "NOT YET"
+        playScream();
+        s.transition = "fv_scream";
+        s.transitionTimer = 1200;
+        s.transitionText = "";
+        s.transitionCharIndex = 0;
+        // Kill the victim NPC
+        for (const npc of s.npcs) {
+          if (npc.isAlive && npc.stopsMoving) {
+            npc.deathPhase = "stasis";
+            npc.deathTimer = 400;
+            globalMartyrsRef.current++;
+          }
+        }
+      } else if (s.transition === "fv_scream") {
+        const targetText = "NOT YET";
+        if (s.transitionTimer > 800 && s.transitionCharIndex < targetText.length) {
+          if (s.transitionTimer <= 0 || s.transitionText.length === 0) {
+            s.transitionText = targetText;
+            s.transitionCharIndex = targetText.length;
+          }
+          // Rapid type
+          const elapsed = 1200 - s.transitionTimer;
+          const charsToShow = Math.min(Math.floor(elapsed / 30), targetText.length);
+          s.transitionText = targetText.substring(0, charsToShow);
+          s.transitionCharIndex = charsToShow;
+        } else if (s.transitionCharIndex < targetText.length) {
+          s.transitionText = targetText;
+          s.transitionCharIndex = targetText.length;
+        }
+        if (s.transitionTimer <= 0) {
+          s.transition = "fv_static";
+          s.transitionTimer = STATIC_DURATION;
+          startTransitionHum();
+        }
+      } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
+        stopTransitionHum();
+        // Load real Level 3 (index 4) with same survivor count
+        const nextLevel = s.currentLevel + 1;
+        if (nextLevel < LEVELS.length) {
+          const ns = initState(nextLevel);
+          ns.totalNpc = survivorsRef.current;
+          ns.lastTime = s.lastTime;
+          Object.assign(s, ns);
+        }
+        s.transition = "none";
+        s.inputDisabled = false;
+      }
     };
 
     const update = (dt: number) => {
@@ -613,6 +663,18 @@ const Index = () => {
         const npcCenterCol = Math.floor((npc.x + NPC_W / 2) / TILE);
         const npcRow = Math.floor((npc.y + NPC_H / 2) / TILE);
         if (npcCenterCol === s.exitCol && npcRow === s.exitRow) {
+          // False victory on Level 3 intro (index 3)
+          if (s.currentLevel === 3 && s.transition === "none") {
+            // Freeze this NPC, trigger false victory
+            npc.stopsMoving = true;
+            npc.vy = 0;
+            s.transition = "fv_freeze";
+            s.transitionTimer = 500;
+            s.inputDisabled = true;
+            // Mark all NPCs for death
+            s.hoveredNpcId = npc.id; // track the victim
+            continue;
+          }
           npc.isRescued = true;
           s.rescued++;
         }
@@ -634,7 +696,7 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2" || s.transition === "fv_static") {
         drawStatic(ctx);
         return;
       }
@@ -644,6 +706,24 @@ const Index = () => {
         ctx.fillStyle = s.transition === "fail_typewriter" ? "#ff4444" : "#00ff88";
         ctx.font = "14px monospace";
         ctx.fillText(s.transitionText + (Math.floor(now / 300) % 2 === 0 ? "█" : ""), W / 2 - 160, H / 2);
+        return;
+      }
+      if (s.transition === "fv_scream") {
+        ctx.fillStyle = "#0a0a12";
+        ctx.fillRect(0, 0, W, H);
+        // Flickering dark red text
+        const flicker = 0.7 + Math.random() * 0.3;
+        ctx.fillStyle = `rgba(139, 0, 0, ${flicker})`;
+        ctx.font = "bold 24px monospace";
+        const textW = ctx.measureText(s.transitionText).width;
+        ctx.fillText(s.transitionText, (W - textW) / 2, H / 2);
+        // Scanline distortion
+        for (let y = 0; y < H; y += 6) {
+          if (Math.random() > 0.7) {
+            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.08})`;
+            ctx.fillRect(0, y, W, 2);
+          }
+        }
         return;
       }
 
