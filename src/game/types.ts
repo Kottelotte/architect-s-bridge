@@ -45,6 +45,7 @@ export type TransitionPhase =
   | "fail_typewriter"
   | "fail_static2"
   | "fv_freeze"
+  | "fv_slash"
   | "fv_scream"
   | "fv_static"
   | "done";

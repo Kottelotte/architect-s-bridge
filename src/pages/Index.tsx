@@ -7,7 +7,7 @@ import {
   TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
-import { playBuildTick, playAnchorClick, playScream, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
+import { playBuildTick, playAnchorClick, playFleshTear, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -410,19 +410,31 @@ const Index = () => {
       }
       // False victory phases
       else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
-        // Play scream and show "NOT YET"
-        playScream();
-        s.transition = "fv_scream";
-        s.transitionTimer = 1200;
-        s.transitionText = "";
-        s.transitionCharIndex = 0;
-        // Kill the victim NPC
-        for (const npc of s.npcs) {
-          if (npc.isAlive && npc.stopsMoving) {
-            npc.deathPhase = "stasis";
-            npc.deathTimer = 400;
-            globalMartyrsRef.current++;
+        // Start slash sequence (3 slashes, ~60ms apart = 180ms total)
+        s.transition = "fv_slash";
+        s.transitionTimer = 180;
+        s.transitionCharIndex = 0; // reuse as slash counter
+      } else if (s.transition === "fv_slash") {
+        // Count slashes by charIndex: 0,1,2
+        const slashProgress = 180 - s.transitionTimer;
+        const newSlashCount = Math.min(3, Math.floor(slashProgress / 60));
+        if (newSlashCount > s.transitionCharIndex) {
+          s.transitionCharIndex = newSlashCount;
+        }
+        if (s.transitionTimer <= 0) {
+          // Play destruction sound, kill NPC, go to text phase
+          playFleshTear();
+          for (const npc of s.npcs) {
+            if (npc.isAlive && npc.stopsMoving) {
+              npc.deathPhase = "stasis";
+              npc.deathTimer = 400;
+              globalMartyrsRef.current++;
+            }
           }
+          s.transition = "fv_scream";
+          s.transitionTimer = 1200;
+          s.transitionText = "";
+          s.transitionCharIndex = 0;
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
@@ -665,7 +677,7 @@ const Index = () => {
             npc.stopsMoving = true;
             npc.vy = 0;
             s.transition = "fv_freeze";
-            s.transitionTimer = 500;
+            s.transitionTimer = 200;
             s.inputDisabled = true;
             // Mark all NPCs for death
             s.hoveredNpcId = npc.id; // track the victim
@@ -1359,6 +1371,66 @@ const Index = () => {
           ctx.fillText(`bld:${npc.isBuilding}`, lx, ly); ly += 9;
           ctx.fillText(`spd:${SPEED} vx:${vx.toFixed(1)}`, lx, ly);
           ctx.globalAlpha = 1;
+        }
+      }
+
+      // False victory slash overlay (drawn on top of normal scene)
+      if (s.transition === "fv_slash" || s.transition === "fv_freeze") {
+        // Find the victim NPC for positioning slashes
+        const victim = s.npcs.find(n => n.isAlive && n.stopsMoving);
+        if (victim && s.transition === "fv_slash") {
+          const cx = victim.x + NPC_W / 2;
+          const cy = victim.y + NPC_H / 2;
+          const slashCount = s.transitionCharIndex;
+          const slashAngles = [-0.6, 0.5, -0.3]; // diagonal angles in radians
+          const slashOffsets = [[-3, -2], [3, 1], [0, -1]]; // slight position offsets
+
+          ctx.save();
+          ctx.lineCap = "round";
+          for (let i = 0; i < slashCount; i++) {
+            const angle = slashAngles[i];
+            const ox = slashOffsets[i][0];
+            const oy = slashOffsets[i][1];
+            const len = NPC_H * 1.5;
+            const x1 = cx + ox - Math.cos(angle) * len;
+            const y1 = cy + oy - Math.sin(angle) * len;
+            const x2 = cx + ox + Math.cos(angle) * len;
+            const y2 = cy + oy + Math.sin(angle) * len;
+
+            // Glow layer
+            ctx.strokeStyle = `rgba(180, 0, 0, 0.6)`;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Core slash
+            ctx.strokeStyle = `rgba(255, 40, 40, 0.9)`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Bright center
+            ctx.strokeStyle = `rgba(255, 200, 180, 0.7)`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          // Screen flash on each new slash
+          if (slashCount > 0) {
+            const flashIntensity = Math.max(0, 0.15 - (180 - s.transitionTimer) * 0.001);
+            if (flashIntensity > 0) {
+              ctx.fillStyle = `rgba(139, 0, 0, ${flashIntensity})`;
+              ctx.fillRect(0, 0, W, H);
+            }
+          }
         }
       }
 
