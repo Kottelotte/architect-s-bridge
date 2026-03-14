@@ -426,21 +426,16 @@ const Index = () => {
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
-        if (s.transitionTimer > 800 && s.transitionCharIndex < targetText.length) {
-          if (s.transitionTimer <= 0 || s.transitionText.length === 0) {
-            s.transitionText = targetText;
-            s.transitionCharIndex = targetText.length;
-          }
-          // Rapid type
-          const elapsed = 1200 - s.transitionTimer;
-          const charsToShow = Math.min(Math.floor(elapsed / 30), targetText.length);
-          s.transitionText = targetText.substring(0, charsToShow);
-          s.transitionCharIndex = charsToShow;
-        } else if (s.transitionCharIndex < targetText.length) {
-          s.transitionText = targetText;
-          s.transitionCharIndex = targetText.length;
+        // Typewriter effect: one char per tick
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED * 2.5; // slower for dramatic effect
         }
-        if (s.transitionTimer <= 0) {
+        // Hold after complete
+        if (s.transitionCharIndex >= targetText.length) {
+          s.transitionTimer -= dt;
+          if (s.transitionTimer <= -600) {
           s.transition = "fv_static";
           s.transitionTimer = STATIC_DURATION;
           startTransitionHum();
