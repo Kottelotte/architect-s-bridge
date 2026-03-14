@@ -29,7 +29,7 @@ export function playScream() {
   const src = ctx.createBufferSource();
   src.buffer = buf;
 
-  const dist = ctx.createWaveShaperNode();
+  const dist = ctx.createWaveShaper();
   const curve = new Float32Array(256);
   for (let i = 0; i < 256; i++) {
     const x = (i / 128) - 1;
