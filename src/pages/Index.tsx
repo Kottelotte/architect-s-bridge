@@ -410,19 +410,31 @@ const Index = () => {
       }
       // False victory phases
       else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
-        // Play scream and show "NOT YET"
-        playScream();
-        s.transition = "fv_scream";
-        s.transitionTimer = 1200;
-        s.transitionText = "";
-        s.transitionCharIndex = 0;
-        // Kill the victim NPC
-        for (const npc of s.npcs) {
-          if (npc.isAlive && npc.stopsMoving) {
-            npc.deathPhase = "stasis";
-            npc.deathTimer = 400;
-            globalMartyrsRef.current++;
+        // Start slash sequence (3 slashes, ~60ms apart = 180ms total)
+        s.transition = "fv_slash";
+        s.transitionTimer = 180;
+        s.transitionCharIndex = 0; // reuse as slash counter
+      } else if (s.transition === "fv_slash") {
+        // Count slashes by charIndex: 0,1,2
+        const slashProgress = 180 - s.transitionTimer;
+        const newSlashCount = Math.min(3, Math.floor(slashProgress / 60));
+        if (newSlashCount > s.transitionCharIndex) {
+          s.transitionCharIndex = newSlashCount;
+        }
+        if (s.transitionTimer <= 0) {
+          // Play destruction sound, kill NPC, go to text phase
+          playFleshTear();
+          for (const npc of s.npcs) {
+            if (npc.isAlive && npc.stopsMoving) {
+              npc.deathPhase = "stasis";
+              npc.deathTimer = 400;
+              globalMartyrsRef.current++;
+            }
           }
+          s.transition = "fv_scream";
+          s.transitionTimer = 1200;
+          s.transitionText = "";
+          s.transitionCharIndex = 0;
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
