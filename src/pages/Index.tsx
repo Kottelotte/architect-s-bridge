@@ -408,6 +408,56 @@ const Index = () => {
         s.transition = "none";
         s.inputDisabled = false;
       }
+      // False victory phases
+      else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
+        // Play scream and show "NOT YET"
+        playScream();
+        s.transition = "fv_scream";
+        s.transitionTimer = 1200;
+        s.transitionText = "";
+        s.transitionCharIndex = 0;
+        // Kill the victim NPC
+        for (const npc of s.npcs) {
+          if (npc.isAlive && npc.stopsMoving) {
+            npc.deathPhase = "stasis";
+            npc.deathTimer = 400;
+            globalMartyrsRef.current++;
+          }
+        }
+      } else if (s.transition === "fv_scream") {
+        const targetText = "NOT YET";
+        if (s.transitionTimer > 800 && s.transitionCharIndex < targetText.length) {
+          if (s.transitionTimer <= 0 || s.transitionText.length === 0) {
+            s.transitionText = targetText;
+            s.transitionCharIndex = targetText.length;
+          }
+          // Rapid type
+          const elapsed = 1200 - s.transitionTimer;
+          const charsToShow = Math.min(Math.floor(elapsed / 30), targetText.length);
+          s.transitionText = targetText.substring(0, charsToShow);
+          s.transitionCharIndex = charsToShow;
+        } else if (s.transitionCharIndex < targetText.length) {
+          s.transitionText = targetText;
+          s.transitionCharIndex = targetText.length;
+        }
+        if (s.transitionTimer <= 0) {
+          s.transition = "fv_static";
+          s.transitionTimer = STATIC_DURATION;
+          startTransitionHum();
+        }
+      } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
+        stopTransitionHum();
+        // Load real Level 3 (index 4) with same survivor count
+        const nextLevel = s.currentLevel + 1;
+        if (nextLevel < LEVELS.length) {
+          const ns = initState(nextLevel);
+          ns.totalNpc = survivorsRef.current;
+          ns.lastTime = s.lastTime;
+          Object.assign(s, ns);
+        }
+        s.transition = "none";
+        s.inputDisabled = false;
+      }
     };
 
     const update = (dt: number) => {
