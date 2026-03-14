@@ -456,7 +456,7 @@ const Index = () => {
             startTransition(s, true);
           } else if (s.currentLevel === 2 && s.rescued < 6) {
             startTransition(s, true);
-            s.failMessage = "Not enough.";
+            s.failMessage = "NOT ENOUGH.";
           } else {
             startTransition(s);
           }
