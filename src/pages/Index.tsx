@@ -942,9 +942,71 @@ const Index = () => {
       for (const npc of s.npcs) {
         // Skip fully dead NPCs (not in death animation)
         const inDeathAnim = npc.deathPhase === "stasis" || npc.deathPhase === "dissolve";
-        if (!inDeathAnim && !npc.isAlive && !npc.countsAsDead) continue;
+        const inVesselAnim = npc.deathPhase === "vessel_freeze" || npc.deathPhase === "vessel_slice" || npc.deathPhase === "vessel_stretch";
+        if (!inDeathAnim && !inVesselAnim && !npc.isAlive && !npc.countsAsDead) continue;
         if (npc.isRescued) continue;
-        if (!inDeathAnim && !npc.isAlive && !npc.isSolid) continue;
+        if (!inDeathAnim && !inVesselAnim && !npc.isAlive && !npc.isSolid) continue;
+
+        // Vessel sacrifice animation rendering
+        if (inVesselAnim) {
+          const vesselColor = "#882299";
+          if (npc.deathPhase === "vessel_freeze") {
+            // Frozen NPC with pulsing glow
+            const pulse = 0.6 + 0.4 * Math.sin(now * 0.015);
+            ctx.globalAlpha = pulse;
+            ctx.shadowColor = "#cc44ff";
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = vesselColor;
+            ctx.beginPath();
+            ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(npc.x + 3, npc.y + 8, NPC_W - 6, 8);
+            ctx.fillRect(npc.x + 3, npc.y + 16, 3, 4);
+            ctx.fillRect(npc.x + NPC_W - 6, npc.y + 16, 3, 4);
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+          } else if (npc.deathPhase === "vessel_slice") {
+            // Slicing effect: horizontal line sweeps through NPC
+            const progress = 1 - npc.deathTimer / 300;
+            const sliceY = npc.y + progress * NPC_H;
+            // Draw body split by slice line
+            ctx.fillStyle = vesselColor;
+            const topH = Math.max(0, sliceY - npc.y);
+            const botY = sliceY + 2;
+            const botH = Math.max(0, (npc.y + NPC_H) - botY);
+            // Top half shifts up slightly
+            ctx.globalAlpha = 0.8;
+            ctx.fillRect(npc.x + 2, npc.y - progress * 2, NPC_W - 4, topH);
+            // Bottom half shifts down
+            ctx.fillRect(npc.x + 2, botY + progress * 2, NPC_W - 4, botH);
+            // Bright slice line
+            ctx.fillStyle = "#ff66ff";
+            ctx.globalAlpha = 1 - progress * 0.5;
+            ctx.fillRect(npc.x - 2, sliceY, NPC_W + 4, 2);
+            ctx.globalAlpha = 1;
+          } else if (npc.deathPhase === "vessel_stretch") {
+            // Stretch body horizontally into the tile, fading out
+            const progress = 1 - npc.deathTimer / 400;
+            const stretchW = NPC_W + progress * (TILE * 2 - NPC_W);
+            const stretchH = Math.max(2, NPC_H * (1 - progress * 0.85));
+            const cx = npc.x + NPC_W / 2;
+            const drawX = cx - stretchW / 2;
+            const drawY = npc.y + NPC_H - stretchH;
+            ctx.globalAlpha = 1 - progress * 0.7;
+            ctx.fillStyle = vesselColor;
+            ctx.fillRect(drawX, drawY, stretchW, stretchH);
+            // Glow particles along the stretch
+            for (let i = 0; i < 6; i++) {
+              const px = drawX + (stretchW * i) / 5;
+              const py = drawY + stretchH / 2 + Math.sin(now * 0.01 + i) * 3;
+              ctx.fillStyle = "#cc44ff";
+              ctx.globalAlpha = (1 - progress) * 0.6;
+              ctx.fillRect(px, py, 2, 2);
+            }
+            ctx.globalAlpha = 1;
+          }
+          continue;
+        }
 
         // Death animation rendering
         if (inDeathAnim) {
