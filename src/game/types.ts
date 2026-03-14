@@ -23,6 +23,8 @@ export interface NPC {
   architectState: ArchitectState;
   deathPhase: DeathPhase;
   deathTimer: number;
+  vesselBridgeStart: number;
+  vesselBridgeEnd: number;
 }
 
 export interface LevelDef {

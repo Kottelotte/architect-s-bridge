@@ -311,6 +311,8 @@ const Index = () => {
         architectState: "idle" as const,
         deathPhase: "none" as const,
         deathTimer: 0,
+        vesselBridgeStart: 0,
+        vesselBridgeEnd: 0,
       };
     };
 
@@ -499,15 +501,22 @@ const Index = () => {
           if (npc.deathTimer <= 0) {
             npc.deathPhase = "vessel_stretch";
             npc.deathTimer = 400;
-            // Convert kill tiles to walkable terrain at stretch start
-            const footCol1 = Math.floor(npc.x / TILE);
-            const footCol2 = Math.floor((npc.x + NPC_W - 1) / TILE);
+            // Convert entire connected kill tile strip to walkable terrain
+            const impactCol = Math.floor((npc.x + NPC_W / 2) / TILE);
             const killRow = Math.floor((npc.y + NPC_H) / TILE);
-            if (footCol1 >= 0 && footCol1 < COLS && killRow >= 0 && killRow < ROWS) {
-              s.map[killRow][footCol1] = 1;
-            }
-            if (footCol2 >= 0 && footCol2 < COLS && killRow >= 0 && killRow < ROWS && footCol2 !== footCol1) {
-              s.map[killRow][footCol2] = 1;
+            if (killRow >= 0 && killRow < ROWS) {
+              // Expand left
+              let startC = impactCol;
+              while (startC > 0 && s.map[killRow][startC - 1] === 2) startC--;
+              // Expand right
+              let endC = impactCol;
+              while (endC < COLS - 1 && s.map[killRow][endC + 1] === 2) endC++;
+              // Convert all connected kill tiles
+              for (let c = startC; c <= endC; c++) {
+                s.map[killRow][c] = 1;
+              }
+              npc.vesselBridgeStart = startC;
+              npc.vesselBridgeEnd = endC;
             }
             playBuildTick();
           }
@@ -966,38 +975,45 @@ const Index = () => {
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
           } else if (npc.deathPhase === "vessel_slice") {
-            // Slicing effect: horizontal line sweeps through NPC
+            // Three diagonal slicing effects
             const progress = 1 - npc.deathTimer / 300;
-            const sliceY = npc.y + progress * NPC_H;
-            // Draw body split by slice line
             ctx.fillStyle = vesselColor;
-            const topH = Math.max(0, sliceY - npc.y);
-            const botY = sliceY + 2;
-            const botH = Math.max(0, (npc.y + NPC_H) - botY);
-            // Top half shifts up slightly
-            ctx.globalAlpha = 0.8;
-            ctx.fillRect(npc.x + 2, npc.y - progress * 2, NPC_W - 4, topH);
-            // Bottom half shifts down
-            ctx.fillRect(npc.x + 2, botY + progress * 2, NPC_W - 4, botH);
-            // Bright slice line
-            ctx.fillStyle = "#ff66ff";
-            ctx.globalAlpha = 1 - progress * 0.5;
-            ctx.fillRect(npc.x - 2, sliceY, NPC_W + 4, 2);
+            ctx.globalAlpha = 0.9;
+            const pieceH = NPC_H / 3;
+            for (let p = 0; p < 3; p++) {
+              const offsetX = (p - 1) * progress * 4;
+              const offsetY = (p - 1) * progress * 3;
+              ctx.fillRect(npc.x + offsetX, npc.y + p * pieceH + offsetY, NPC_W, pieceH - 1);
+            }
+            ctx.strokeStyle = "#ff44ff";
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8 * (1 - progress * 0.5);
+            for (let sl = 0; sl < 3; sl++) {
+              const sy = npc.y + (sl + 1) * pieceH * progress;
+              ctx.beginPath();
+              ctx.moveTo(npc.x - 3, sy - 3);
+              ctx.lineTo(npc.x + NPC_W + 3, sy + 3);
+              ctx.stroke();
+            }
             ctx.globalAlpha = 1;
           } else if (npc.deathPhase === "vessel_stretch") {
-            // Stretch body horizontally into the tile, fading out
             const progress = 1 - npc.deathTimer / 400;
-            const stretchW = NPC_W + progress * (TILE * 2 - NPC_W);
-            const stretchH = Math.max(2, NPC_H * (1 - progress * 0.85));
+            const bridgeStartPx = npc.vesselBridgeStart * TILE;
+            const bridgeEndPx = (npc.vesselBridgeEnd + 1) * TILE;
+            const bridgeW = bridgeEndPx - bridgeStartPx;
             const cx = npc.x + NPC_W / 2;
-            const drawX = cx - stretchW / 2;
+            const targetCx = bridgeStartPx + bridgeW / 2;
+            const currentW = NPC_W + progress * (bridgeW - NPC_W);
+            const currentCx = cx + progress * (targetCx - cx);
+            const currentX = currentCx - currentW / 2;
+            const stretchH = Math.max(2, NPC_H * (1 - progress * 0.85));
             const drawY = npc.y + NPC_H - stretchH;
             ctx.globalAlpha = 1 - progress * 0.7;
             ctx.fillStyle = vesselColor;
-            ctx.fillRect(drawX, drawY, stretchW, stretchH);
-            // Glow particles along the stretch
-            for (let i = 0; i < 6; i++) {
-              const px = drawX + (stretchW * i) / 5;
+            ctx.fillRect(currentX, drawY, currentW, stretchH);
+            const particleCount = Math.max(6, Math.floor(currentW / 8));
+            for (let i = 0; i < particleCount; i++) {
+              const px = currentX + (currentW * i) / (particleCount - 1);
               const py = drawY + stretchH / 2 + Math.sin(now * 0.01 + i) * 3;
               ctx.fillStyle = "#cc44ff";
               ctx.globalAlpha = (1 - progress) * 0.6;
