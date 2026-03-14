@@ -52,7 +52,7 @@ function initState(levelIndex: number): GameState {
 
 // --- COMPONENT ---
 // Martyr horizon visibility caps per level index
-const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3 };
+const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3, 4: Infinity };
 // Seeded pseudo-random positions for martyrs (asymmetric, clustered)
 function generateMartyrPositions(count: number): number[] {
   const positions: number[] = [];
