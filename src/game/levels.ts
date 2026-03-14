@@ -125,8 +125,6 @@ function createLevel2(): LevelDef {
   // Mid floor: row 17, cols 3-12
   for (let c = 3; c <= 12; c++) setTile(map, 17, c, 1);
 
-  // Wall blocking rightward escape from mid level: col 13, rows 13-17
-  for (let r = 13; r <= 17; r++) setTile(map, r, 13, 1);
 
   // Solid fill below mid floor (Excavator digs through this)
   // rows 18-22, cols 10-12 only (minimal mass, just the diggable column)
