@@ -176,6 +176,8 @@ function createLevel2(): LevelDef {
 }
 
 // Level 3: Vessel introduction — sacrifice one NPC to cross kill tiles
+// Level 3 real puzzle: Anchor → Excavator → Vessel → Architect
+// Layout: upper spawn → drop → Anchor reversal → Excavator shaft → Vessel kill zone → Architect bridge → exit
 function createLevel3(): LevelDef {
   const map = emptyMap();
 
@@ -185,45 +187,65 @@ function createLevel3(): LevelDef {
     map[r][COLS - 1] = 1;
   }
 
-  // === Spawn platform: row 8, cols 1-18 ===
-  for (let c = 1; c <= 18; c++) setTile(map, 8, c, 1);
-  for (let r = 9; r < ROWS; r++) {
-    for (let c = 1; c <= 10; c++) setTile(map, r, c, 1);
+  // === SECTION 1: Upper spawn platform ===
+  // Row 8, cols 1-14 — NPCs spawn left, walk right, drop off edge
+  for (let c = 1; c <= 14; c++) setTile(map, 8, c, 1);
+
+  // === SECTION 2: Mid platform (Anchor section) ===
+  // Row 13, cols 10-28 — NPCs land here after dropping from spawn
+  for (let c = 10; c <= 28; c++) setTile(map, 13, c, 1);
+
+  // Right wall at col 29, rows 9-12 — stops NPCs, need Anchor before this
+  for (let r = 9; r <= 12; r++) setTile(map, r, 29, 1);
+
+  // === SECTION 3: Excavator dig zone ===
+  // After Anchor reverses direction, NPCs walk left on mid platform
+  // Diggable column at cols 12-13, rows 14-18 (5 rows deep)
+  for (let r = 14; r <= 18; r++) {
+    for (let c = 12; c <= 13; c++) setTile(map, r, c, 1);
   }
 
-  // Fall hole: cols 11-13 (NPCs drop through)
-  // cols 11-13 have no floor at row 8 already since we only built up to 18
-  // Actually clear the hole explicitly
-  for (let c = 11; c <= 13; c++) setTile(map, 8, c, 0);
+  // === SECTION 4: Bottom platform (Vessel + Architect) ===
+  // Row 19, cols 5-28 — NPCs land here after Excavator shaft
+  // Left portion: cols 5-11
+  for (let c = 5; c <= 11; c++) setTile(map, 19, c, 1);
 
-  // === Lower platform: row 16, cols 5-28 ===
-  for (let c = 5; c <= 28; c++) setTile(map, 16, c, 1);
-  // Solid fill below
-  for (let r = 17; r < ROWS; r++) {
-    for (let c = 5; c <= 28; c++) setTile(map, r, c, 1);
+  // Kill zone: cols 12-18 on row 19 — Vessel must sacrifice
+  for (let c = 12; c <= 18; c++) setTile(map, 19, c, 2);
+
+  // Post-kill-zone platform: cols 19-23
+  for (let c = 19; c <= 23; c++) setTile(map, 19, c, 1);
+
+  // Architect gap: cols 24-26 (empty, needs bridge)
+
+  // Exit platform: cols 27-30, row 19
+  for (let c = 27; c <= 30; c++) setTile(map, 19, c, 1);
+
+  // Solid fill below bottom platforms
+  for (let r = 20; r < ROWS; r++) {
+    for (let c = 5; c <= 11; c++) setTile(map, r, c, 1);
+    for (let c = 19; c <= 23; c++) setTile(map, r, c, 1);
+    for (let c = 27; c <= 30; c++) setTile(map, r, c, 1);
   }
 
-  // Wall under fall hole left edge to prevent walking back left
-  for (let r = 9; r <= 15; r++) setTile(map, r, 11, 1);
+  // Kill tiles at bottom of gaps
+  for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);   // left death pit
+  for (let c = 24; c <= 26; c++) setTile(map, ROWS - 1, c, 2); // architect gap bottom
 
-  // === Kill tile strip on lower platform: row 15 (surface), cols 17-21 ===
-  // Remove floor tiles and place kill tiles where NPCs walk
-  for (let c = 17; c <= 21; c++) {
-    setTile(map, 16, c, 2); // kill tiles on the walking surface
-  }
+  // Wall to prevent NPCs walking left off bottom platform
+  for (let r = 14; r <= 18; r++) setTile(map, r, 5, 1);
 
-  // Kill tiles at bottom of fall area for wrong drops
-  for (let c = 1; c <= 4; c++) setTile(map, ROWS - 1, c, 2);
-
-  // Exit platform on right side
-  // Exit is at row 15 on top of the solid area
+  // Roles: Anchor → Excavator → Vessel → Architect
   const roles: Role[] = Array(12).fill("none") as Role[];
-  roles[1] = "vessel";
+  roles[1] = "anchor";
+  roles[2] = "excavator";
+  roles[3] = "vessel";
+  roles[4] = "architect";
 
   return {
     map,
-    exitCol: 26,
-    exitRow: 15,
+    exitCol: 28,
+    exitRow: 18,
     spawnX: 3 * TILE,
     spawnY: 7 * TILE - NPC_H,
     roles,
