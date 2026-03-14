@@ -256,6 +256,19 @@ const Index = () => {
       return;
     }
 
+    if (npc.role === "vessel") {
+      if (!npc.roleActivated) {
+        // Activate vessel: NPC is now primed to sacrifice on kill tiles
+        s.pauseTimer = 400;
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+        npc.roleActivated = true;
+        playAnchorClick();
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
     if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
@@ -422,7 +435,8 @@ const Index = () => {
       const hoverPause = hoveredNpc != null && (
         (hoveredNpc.role === "architect" && hoveredNpc.architectState === "idle") ||
         (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated) ||
-        (hoveredNpc.role === "excavator" && !hoveredNpc.roleActivated)
+        (hoveredNpc.role === "excavator" && !hoveredNpc.roleActivated) ||
+        (hoveredNpc.role === "vessel" && !hoveredNpc.roleActivated)
       );
 
       if (s.pauseTimer > 0) {
@@ -502,6 +516,22 @@ const Index = () => {
         // Kill tile check — start death animation instead of instant death
         const killRow = Math.floor((npc.y + NPC_H) / TILE);
         if (isKill(s.map, footCol1, killRow) || isKill(s.map, footCol2, killRow)) {
+          // Vessel role: become a permanent martyr on the kill tile
+          if (npc.role === "vessel" && npc.roleActivated) {
+            npc.stopsMoving = true;
+            npc.isSolid = true;
+            npc.countsAsDead = true;
+            npc.vy = 0;
+            // Convert kill tiles under NPC to solid walkable tiles
+            if (footCol1 >= 0 && footCol1 < COLS && killRow >= 0 && killRow < ROWS) {
+              s.map[killRow][footCol1] = 1;
+            }
+            if (footCol2 >= 0 && footCol2 < COLS && killRow >= 0 && killRow < ROWS && footCol2 !== footCol1) {
+              s.map[killRow][footCol2] = 1;
+            }
+            playBuildTick();
+            continue;
+          }
           npc.deathPhase = "stasis";
           npc.deathTimer = 400;
           npc.vy = 0;
@@ -886,10 +916,11 @@ const Index = () => {
         if (inDeathAnim) {
           if (npc.deathPhase === "stasis") {
             // Frozen NPC rendered normally (no red tint)
-            let bodyColor = "#cccccc";
+             let bodyColor = "#cccccc";
             if (npc.role === "architect") bodyColor = "#00ccff";
             else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
             else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
+            else if (npc.role === "vessel") bodyColor = npc.roleActivated ? "#882299" : "#cc44ff";
             ctx.fillStyle = bodyColor;
             ctx.beginPath();
             ctx.arc(npc.x + NPC_W / 2, npc.y + 4, 4, 0, Math.PI * 2);
@@ -909,10 +940,11 @@ const Index = () => {
             // Body fades as more particles spawn
             const bodyAlpha = Math.max(0, 1 - progress * 1.2);
             if (bodyAlpha > 0) {
-              let bodyColor = "#cccccc";
+               let bodyColor = "#cccccc";
               if (npc.role === "architect") bodyColor = "#00ccff";
               else if (npc.role === "anchor") bodyColor = npc.roleActivated ? "#884400" : "#ff6600";
               else if (npc.role === "excavator") bodyColor = npc.roleActivated ? "#997700" : "#ffcc00";
+              else if (npc.role === "vessel") bodyColor = npc.roleActivated ? "#882299" : "#cc44ff";
               ctx.globalAlpha = bodyAlpha;
               ctx.fillStyle = bodyColor;
               ctx.beginPath();
@@ -958,8 +990,9 @@ const Index = () => {
           const isArchitectReady = npc.role === "architect" && npc.architectState === "idle";
           const isAnchorReady = npc.role === "anchor" && !npc.roleActivated;
           const isExcavatorReady = npc.role === "excavator" && !npc.roleActivated;
-          const isRoleReady = isArchitectReady || isAnchorReady || isExcavatorReady;
-          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : isExcavatorReady ? "#ffcc00" : "#ffffff";
+          const isVesselReady = npc.role === "vessel" && !npc.roleActivated;
+          const isRoleReady = isArchitectReady || isAnchorReady || isExcavatorReady || isVesselReady;
+          const glitchColor = isArchitectReady ? "#00ccff" : isAnchorReady ? "#ff6600" : isExcavatorReady ? "#ffcc00" : isVesselReady ? "#cc44ff" : "#ffffff";
           
           // Flickering effect
           const flicker = Math.sin(now / 40) * 0.3 + 0.7;
@@ -1002,10 +1035,14 @@ const Index = () => {
             bodyColor = "#ff6600";
           } else if (npc.role === "anchor" && npc.roleActivated) {
             bodyColor = "#884400";
-          } else if (npc.role === "excavator" && !npc.roleActivated) {
+           } else if (npc.role === "excavator" && !npc.roleActivated) {
             bodyColor = "#ffcc00";
           } else if (npc.role === "excavator" && npc.roleActivated) {
             bodyColor = "#997700";
+          } else if (npc.role === "vessel" && !npc.roleActivated) {
+            bodyColor = "#cc44ff";
+          } else if (npc.role === "vessel" && npc.roleActivated) {
+            bodyColor = "#882299";
           } else {
             bodyColor = "#cccccc";
           }
