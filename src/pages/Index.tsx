@@ -515,6 +515,22 @@ const Index = () => {
         // Kill tile check — start death animation instead of instant death
         const killRow = Math.floor((npc.y + NPC_H) / TILE);
         if (isKill(s.map, footCol1, killRow) || isKill(s.map, footCol2, killRow)) {
+          // Vessel role: become a permanent martyr on the kill tile
+          if (npc.role === "vessel" && npc.roleActivated) {
+            npc.stopsMoving = true;
+            npc.isSolid = true;
+            npc.countsAsDead = true;
+            npc.vy = 0;
+            // Convert kill tiles under NPC to solid walkable tiles
+            if (footCol1 >= 0 && footCol1 < COLS && killRow >= 0 && killRow < ROWS) {
+              s.map[killRow][footCol1] = 1;
+            }
+            if (footCol2 >= 0 && footCol2 < COLS && killRow >= 0 && killRow < ROWS && footCol2 !== footCol1) {
+              s.map[killRow][footCol2] = 1;
+            }
+            playBuildTick();
+            continue;
+          }
           npc.deathPhase = "stasis";
           npc.deathTimer = 400;
           npc.vy = 0;
