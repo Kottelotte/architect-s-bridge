@@ -143,8 +143,7 @@ function createLevel2(): LevelDef {
   // Extended walking space: cols 10-23 so NPCs walk several tiles before hitting wall
   for (let c = 10; c <= 23; c++) setTile(map, 22, c, 1);
 
-  // Blocking wall: col 23, rows 13-21 — moved right for more walking/realization space
-  for (let r = 13; r <= 21; r++) setTile(map, r, 23, 1);
+  // Right chamber wall removed — NPCs walk freely toward Architect bridge
 
   // Gap: cols 24-26 (needs Architect bridge)
 
