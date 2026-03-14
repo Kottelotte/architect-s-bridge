@@ -104,10 +104,6 @@ function createLevel2(): LevelDef {
   const map = emptyMap();
 
   // === Boundary walls ===
-  // Left wall: col 0 (solid except leave cols 1-2 open for left death pit)
-  for (let r = 0; r < ROWS; r++) {
-    map[r][0] = 1;
-  }
   // Right wall: col 31 — solid everywhere EXCEPT the death gate zone
   for (let r = 0; r < ROWS; r++) {
     map[r][COLS - 1] = 1;
@@ -122,24 +118,20 @@ function createLevel2(): LevelDef {
   // Left death pit: cols 1-2 have no platform, kill tiles at bottom
   for (let c = 1; c <= 2; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Excavator fall hole: cols 3-5 — open vertical drop, no right wall
+  // Excavator fall hole: cols 3-5 — completely open vertical drop
   for (let c = 3; c <= 5; c++) setTile(map, 12, c, 0);
 
   // === SECTION B: Mid platform (Excavator) ===
-  // NPCs fall through hole, land on mid platform
   // Mid floor: row 17, cols 3-12
   for (let c = 3; c <= 12; c++) setTile(map, 17, c, 1);
-
-  // Left bounce wall: col 3, rows 13-17 (NPCs bounce off this)
-  for (let r = 13; r <= 17; r++) setTile(map, r, 3, 1);
 
   // Wall blocking rightward escape from mid level: col 13, rows 13-17
   for (let r = 13; r <= 17; r++) setTile(map, r, 13, 1);
 
   // Solid fill below mid floor (Excavator digs through this)
-  // rows 18-22, cols 3-12 (only diggable area, no extra mass)
+  // rows 18-22, cols 10-12 only (minimal mass, just the diggable column)
   for (let r = 18; r <= 22; r++) {
-    for (let c = 3; c <= 12; c++) setTile(map, r, c, 1);
+    for (let c = 10; c <= 12; c++) setTile(map, r, c, 1);
   }
 
   // Kill tiles under wrong excavation area (cols 3-9)
