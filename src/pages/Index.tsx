@@ -677,7 +677,7 @@ const Index = () => {
             npc.stopsMoving = true;
             npc.vy = 0;
             s.transition = "fv_freeze";
-            s.transitionTimer = 500;
+            s.transitionTimer = 200;
             s.inputDisabled = true;
             // Mark all NPCs for death
             s.hoveredNpcId = npc.id; // track the victim
