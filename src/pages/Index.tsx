@@ -613,6 +613,18 @@ const Index = () => {
         const npcCenterCol = Math.floor((npc.x + NPC_W / 2) / TILE);
         const npcRow = Math.floor((npc.y + NPC_H / 2) / TILE);
         if (npcCenterCol === s.exitCol && npcRow === s.exitRow) {
+          // False victory on Level 3 intro (index 3)
+          if (s.currentLevel === 3 && s.transition === "none") {
+            // Freeze this NPC, trigger false victory
+            npc.stopsMoving = true;
+            npc.vy = 0;
+            s.transition = "fv_freeze";
+            s.transitionTimer = 500;
+            s.inputDisabled = true;
+            // Mark all NPCs for death
+            s.hoveredNpcId = npc.id; // track the victim
+            continue;
+          }
           npc.isRescued = true;
           s.rescued++;
         }
