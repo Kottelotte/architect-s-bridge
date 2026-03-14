@@ -311,6 +311,8 @@ const Index = () => {
         architectState: "idle" as const,
         deathPhase: "none" as const,
         deathTimer: 0,
+        vesselBridgeStart: 0,
+        vesselBridgeEnd: 0,
       };
     };
 
