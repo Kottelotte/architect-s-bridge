@@ -256,6 +256,19 @@ const Index = () => {
       return;
     }
 
+    if (npc.role === "vessel") {
+      if (!npc.roleActivated) {
+        // Activate vessel: NPC is now primed to sacrifice on kill tiles
+        s.pauseTimer = 400;
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+        npc.roleActivated = true;
+        playAnchorClick();
+      } else {
+        npc.glitchUntil = performance.now() + GLITCH_DURATION;
+      }
+      return;
+    }
+
     if (npc.role !== "none") {
       npc.glitchUntil = performance.now() + GLITCH_DURATION;
     }
