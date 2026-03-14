@@ -561,17 +561,9 @@ const Index = () => {
           // Vessel role: become a permanent martyr on the kill tile
           if (npc.role === "vessel" && npc.roleActivated) {
             npc.stopsMoving = true;
-            npc.isSolid = true;
-            npc.countsAsDead = true;
             npc.vy = 0;
-            // Convert kill tiles under NPC to solid walkable tiles
-            if (footCol1 >= 0 && footCol1 < COLS && killRow >= 0 && killRow < ROWS) {
-              s.map[killRow][footCol1] = 1;
-            }
-            if (footCol2 >= 0 && footCol2 < COLS && killRow >= 0 && killRow < ROWS && footCol2 !== footCol1) {
-              s.map[killRow][footCol2] = 1;
-            }
-            playBuildTick();
+            npc.deathPhase = "vessel_freeze";
+            npc.deathTimer = 350;
             continue;
           }
           npc.deathPhase = "stasis";
