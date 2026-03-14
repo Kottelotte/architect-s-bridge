@@ -121,9 +121,9 @@ function createLevel2(): LevelDef {
   // Excavator fall hole: cols 3-5 — completely open vertical drop
   for (let c = 3; c <= 5; c++) setTile(map, 12, c, 0);
 
-  // Left chamber wall under fall hole: col 3, rows 13-16
-  // Prevents NPCs from walking back left after landing
-  for (let r = 13; r <= 16; r++) setTile(map, r, 3, 1);
+  // Chamber wall at col 9, rows 13-16
+  // Prevents NPCs from walking back toward the fall hole
+  for (let r = 13; r <= 16; r++) setTile(map, r, 9, 1);
 
   // === SECTION B: Mid platform (Excavator) ===
   // Mid floor: row 17, cols 3-12
