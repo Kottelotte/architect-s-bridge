@@ -696,7 +696,7 @@ const Index = () => {
       ctx.clearRect(0, 0, W, H);
 
       // Transition rendering
-      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2") {
+      if (s.transition === "static1" || s.transition === "static2" || s.transition === "fail_static" || s.transition === "fail_static2" || s.transition === "fv_static") {
         drawStatic(ctx);
         return;
       }
@@ -706,6 +706,24 @@ const Index = () => {
         ctx.fillStyle = s.transition === "fail_typewriter" ? "#ff4444" : "#00ff88";
         ctx.font = "14px monospace";
         ctx.fillText(s.transitionText + (Math.floor(now / 300) % 2 === 0 ? "█" : ""), W / 2 - 160, H / 2);
+        return;
+      }
+      if (s.transition === "fv_scream") {
+        ctx.fillStyle = "#0a0a12";
+        ctx.fillRect(0, 0, W, H);
+        // Flickering dark red text
+        const flicker = 0.7 + Math.random() * 0.3;
+        ctx.fillStyle = `rgba(139, 0, 0, ${flicker})`;
+        ctx.font = "bold 24px monospace";
+        const textW = ctx.measureText(s.transitionText).width;
+        ctx.fillText(s.transitionText, (W - textW) / 2, H / 2);
+        // Scanline distortion
+        for (let y = 0; y < H; y += 6) {
+          if (Math.random() > 0.7) {
+            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.08})`;
+            ctx.fillRect(0, y, W, 2);
+          }
+        }
         return;
       }
 
