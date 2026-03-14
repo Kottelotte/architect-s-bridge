@@ -52,7 +52,7 @@ function initState(levelIndex: number): GameState {
 
 // --- COMPONENT ---
 // Martyr horizon visibility caps per level index
-const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3 };
+const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3, 4: Infinity };
 // Seeded pseudo-random positions for martyrs (asymmetric, clustered)
 function generateMartyrPositions(count: number): number[] {
   const positions: number[] = [];
@@ -426,24 +426,20 @@ const Index = () => {
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
-        if (s.transitionTimer > 800 && s.transitionCharIndex < targetText.length) {
-          if (s.transitionTimer <= 0 || s.transitionText.length === 0) {
-            s.transitionText = targetText;
-            s.transitionCharIndex = targetText.length;
-          }
-          // Rapid type
-          const elapsed = 1200 - s.transitionTimer;
-          const charsToShow = Math.min(Math.floor(elapsed / 30), targetText.length);
-          s.transitionText = targetText.substring(0, charsToShow);
-          s.transitionCharIndex = charsToShow;
-        } else if (s.transitionCharIndex < targetText.length) {
-          s.transitionText = targetText;
-          s.transitionCharIndex = targetText.length;
+        // Typewriter effect: one char per tick
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED * 2.5; // slower for dramatic effect
         }
-        if (s.transitionTimer <= 0) {
-          s.transition = "fv_static";
-          s.transitionTimer = STATIC_DURATION;
-          startTransitionHum();
+        // Hold after complete
+        if (s.transitionCharIndex >= targetText.length) {
+          s.transitionTimer -= dt;
+          if (s.transitionTimer <= -600) {
+            s.transition = "fv_static";
+            s.transitionTimer = STATIC_DURATION;
+            startTransitionHum();
+          }
         }
       } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
         stopTransitionHum();
@@ -711,16 +707,18 @@ const Index = () => {
       if (s.transition === "fv_scream") {
         ctx.fillStyle = "#0a0a12";
         ctx.fillRect(0, 0, W, H);
-        // Flickering dark red text
+        // Typewriter "NOT YET" in large dark red
+        const targetText = "NOT YET";
         const flicker = 0.7 + Math.random() * 0.3;
         ctx.fillStyle = `rgba(139, 0, 0, ${flicker})`;
-        ctx.font = "bold 24px monospace";
-        const textW = ctx.measureText(s.transitionText).width;
-        ctx.fillText(s.transitionText, (W - textW) / 2, H / 2);
+        ctx.font = "bold 36px monospace";
+        const displayText = s.transitionText + (Math.floor(now / 250) % 2 === 0 ? "█" : "");
+        const textW = ctx.measureText(displayText).width;
+        ctx.fillText(displayText, (W - textW) / 2, H / 2);
         // Scanline distortion
-        for (let y = 0; y < H; y += 6) {
-          if (Math.random() > 0.7) {
-            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.08})`;
+        for (let y = 0; y < H; y += 4) {
+          if (Math.random() > 0.6) {
+            ctx.fillStyle = `rgba(139, 0, 0, ${Math.random() * 0.1})`;
             ctx.fillRect(0, y, W, 2);
           }
         }
@@ -1018,14 +1016,70 @@ const Index = () => {
         }
       }
 
-      // Exit
-      ctx.fillStyle = "#00ff88";
-      ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now / 300);
-      ctx.fillRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = "#00ff88";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
+      // Exit — with glitch effect on false victory level
+      {
+        const exitX = s.exitCol * TILE + 2;
+        const exitY = s.exitRow * TILE + 2;
+        const exitSize = TILE - 4;
+
+        // Calculate glitch intensity for fake exit (level 3 = intro)
+        let fakeExitGlitch = 0;
+        if (s.currentLevel === 3) {
+          // Find closest alive NPC distance to exit
+          let minDist = Infinity;
+          for (const npc of s.npcs) {
+            if (!npc.isAlive || npc.isRescued || npc.stopsMoving) continue;
+            const dx = (npc.x + NPC_W / 2) - (s.exitCol * TILE + TILE / 2);
+            const dy = (npc.y + NPC_H / 2) - (s.exitRow * TILE + TILE / 2);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDist) minDist = dist;
+          }
+          // Glitch intensifies within 200px, max at 0
+          fakeExitGlitch = Math.max(0, 1 - minDist / 200);
+        }
+
+        if (fakeExitGlitch > 0.05) {
+          // Glitchy fake exit: jitter, brightness flicker, scanlines
+          const jitterX = (Math.random() - 0.5) * fakeExitGlitch * 4;
+          const jitterY = (Math.random() - 0.5) * fakeExitGlitch * 3;
+          const flicker = 0.3 + 0.15 * Math.sin(now / 300) + fakeExitGlitch * 0.3 * Math.random();
+
+          ctx.fillStyle = "#00ff88";
+          ctx.globalAlpha = flicker;
+          ctx.fillRect(exitX + jitterX, exitY + jitterY, exitSize, exitSize);
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#00ff88";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(exitX + jitterX, exitY + jitterY, exitSize, exitSize);
+
+          // Scanline distortion over exit area
+          if (fakeExitGlitch > 0.3) {
+            const scanCount = Math.floor(fakeExitGlitch * 5);
+            for (let sl = 0; sl < scanCount; sl++) {
+              const sy = exitY + Math.random() * exitSize;
+              ctx.fillStyle = `rgba(0, 255, 136, ${fakeExitGlitch * 0.15})`;
+              ctx.fillRect(exitX - 4, sy, exitSize + 8, 1);
+            }
+          }
+
+          // Ghost duplicate at offset
+          if (fakeExitGlitch > 0.5) {
+            ctx.globalAlpha = fakeExitGlitch * 0.2;
+            ctx.fillStyle = "#00ff88";
+            ctx.fillRect(exitX + 3, exitY - 2, exitSize, exitSize);
+            ctx.globalAlpha = 1;
+          }
+        } else {
+          // Normal exit rendering
+          ctx.fillStyle = "#00ff88";
+          ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now / 300);
+          ctx.fillRect(exitX, exitY, exitSize, exitSize);
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#00ff88";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(exitX, exitY, exitSize, exitSize);
+        }
+      }
 
       // NPCs
       for (const npc of s.npcs) {

@@ -230,7 +230,7 @@ function createLevel3(): LevelDef {
   };
 }
 
-// Level 3 intro: false victory — short platform with a close fake exit
+// Level 3 intro: false victory — longer platform with a distant fake exit
 function createLevel3Intro(): LevelDef {
   const map = emptyMap();
 
@@ -240,24 +240,24 @@ function createLevel3Intro(): LevelDef {
     map[r][COLS - 1] = 1;
   }
 
-  // Simple platform at row 14, cols 1-16
-  for (let c = 1; c <= 16; c++) setTile(map, 14, c, 1);
+  // Lowered platform at row 18 (lower half of screen), cols 1-28 (doubled width)
+  for (let c = 1; c <= 28; c++) setTile(map, 18, c, 1);
   // Solid fill below
-  for (let r = 15; r < ROWS; r++) {
-    for (let c = 1; c <= 16; c++) setTile(map, r, c, 1);
+  for (let r = 19; r < ROWS; r++) {
+    for (let c = 1; c <= 28; c++) setTile(map, r, c, 1);
   }
 
   // Kill pit right side
-  for (let c = 17; c < COLS - 1; c++) setTile(map, ROWS - 1, c, 2);
+  for (let c = 29; c < COLS - 1; c++) setTile(map, ROWS - 1, c, 2);
 
   const roles: Role[] = Array(12).fill("none") as Role[];
 
   return {
     map,
-    exitCol: 13,
-    exitRow: 13,
+    exitCol: 26,
+    exitRow: 17,
     spawnX: 3 * TILE,
-    spawnY: 13 * TILE - NPC_H,
+    spawnY: 17 * TILE - NPC_H,
     roles,
   };
 }
