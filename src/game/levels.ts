@@ -112,9 +112,8 @@ function createLevel2(): LevelDef {
   for (let r = 0; r < ROWS; r++) {
     map[r][COLS - 1] = 1;
   }
-  // Death gate: kill zone raised by 1 tile → rows 8-11 (4 tiles tall)
-  // Bottom of gate (row 12) is now normal wall so NPCs visibly enter before dying
-  for (let r = 8; r <= 11; r++) setTile(map, r, COLS - 1, 2);
+  // Death gate: rows 9-12 (4 tiles tall), NPCs walk into wall and die
+  for (let r = 9; r <= 12; r++) setTile(map, r, COLS - 1, 2);
 
   // === SECTION A: Spawn platform + Death gate ===
   // Continuous top platform: row 12, cols 3-30
@@ -123,20 +122,22 @@ function createLevel2(): LevelDef {
   // Left death pit: cols 1-2 have no platform, kill tiles at bottom
   for (let c = 1; c <= 2; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Excavator fall hole: cols 5-6 — clean vertical drop, no right wall
-  // Open from col 5 leftward to col 3 (no narrow corridor)
-  for (let c = 3; c <= 6; c++) setTile(map, 12, c, 0);
+  // Excavator fall hole: cols 3-5 — open vertical drop, no right wall
+  for (let c = 3; c <= 5; c++) setTile(map, 12, c, 0);
 
   // === SECTION B: Mid platform (Excavator) ===
   // NPCs fall through hole, land on mid platform
-  // Mid floor: row 17, cols 3-12 (trimmed right to reduce terrain mass)
+  // Mid floor: row 17, cols 3-12
   for (let c = 3; c <= 12; c++) setTile(map, 17, c, 1);
+
+  // Left bounce wall: col 3, rows 13-17 (NPCs bounce off this)
+  for (let r = 13; r <= 17; r++) setTile(map, r, 3, 1);
 
   // Wall blocking rightward escape from mid level: col 13, rows 13-17
   for (let r = 13; r <= 17; r++) setTile(map, r, 13, 1);
 
   // Solid fill below mid floor (Excavator digs through this)
-  // rows 18-22, cols 3-12 (reduced footprint)
+  // rows 18-22, cols 3-12 (only diggable area, no extra mass)
   for (let r = 18; r <= 22; r++) {
     for (let c = 3; c <= 12; c++) setTile(map, r, c, 1);
   }
