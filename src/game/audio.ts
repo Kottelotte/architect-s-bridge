@@ -5,63 +5,78 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
-// Disturbing scream for false victory — harsh, distorted, layered
-export function playScream() {
+// Flesh tear + bone crack destruction sound for false victory
+export function playFleshTear() {
   const ctx = getCtx();
-  const dur = 1.2;
-  const bufSize = Math.floor(ctx.sampleRate * dur);
-  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-  const d = buf.getChannelData(0);
+  const dur = 0.6;
 
-  for (let i = 0; i < bufSize; i++) {
+  // Wet tearing noise — filtered noise with mid-frequency emphasis
+  const tearLen = Math.floor(ctx.sampleRate * 0.4);
+  const tearBuf = ctx.createBuffer(1, tearLen, ctx.sampleRate);
+  const td = tearBuf.getChannelData(0);
+  for (let i = 0; i < tearLen; i++) {
     const t = i / ctx.sampleRate;
-    // Aggressive envelope: sharp attack, slow decay
-    const env = Math.exp(-t * 2.2) * (1 - Math.exp(-t * 120));
-    // Descending fundamental with harsh harmonics
-    const freq = 650 - t * 280;
-    const vibrato = Math.sin(t * 45) * 0.5;
-    // Layered harsh tones
-    const fundamental = Math.sin(t * freq * Math.PI * 2) * 0.35;
-    const harsh1 = Math.sin(t * freq * 1.51 * Math.PI * 2) * 0.25;
-    const harsh2 = Math.sin(t * freq * 2.03 * Math.PI * 2) * 0.2;
-    const harsh3 = Math.sin(t * freq * 3.01 * Math.PI * 2) * 0.12;
-    const sub = Math.sin(t * freq * 0.5 * Math.PI * 2) * 0.15;
-    // Heavy noise component
-    const noise = (Math.random() * 2 - 1) * 0.35 * Math.exp(-t * 3);
-    // Gritty modulation
-    const grind = Math.sin(t * 120) * Math.sin(t * freq * 0.75 * Math.PI * 2) * 0.1;
-    d[i] = (fundamental + harsh1 + harsh2 + harsh3 + sub + noise + grind
-      + vibrato * Math.sin(t * freq * 0.25 * Math.PI * 2) * 0.15
-    ) * env;
+    const env = Math.exp(-t * 5) * (1 - Math.exp(-t * 80));
+    // Modulated noise for wet texture
+    const mod = 0.5 + 0.5 * Math.sin(t * 180);
+    td[i] = (Math.random() * 2 - 1) * env * mod * 0.6;
   }
+  const tearSrc = ctx.createBufferSource();
+  tearSrc.buffer = tearBuf;
+  const tearBp = ctx.createBiquadFilter();
+  tearBp.type = "bandpass";
+  tearBp.frequency.value = 900;
+  tearBp.Q.value = 1.5;
+  const tearGain = ctx.createGain();
+  tearGain.gain.setValueAtTime(0.35, ctx.currentTime);
+  tearGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+  tearSrc.connect(tearBp).connect(tearGain).connect(ctx.destination);
+  tearSrc.start();
+  tearSrc.stop(ctx.currentTime + 0.4);
 
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-
-  // Aggressive waveshaper distortion
-  const dist = ctx.createWaveShaper();
-  const curve = new Float32Array(512);
-  for (let i = 0; i < 512; i++) {
-    const x = (i / 256) - 1;
-    curve[i] = Math.tanh(x * 6) * 0.9 + Math.sin(x * 8) * 0.1;
+  // Bone snap — sharp transient click
+  const snapLen = Math.floor(ctx.sampleRate * 0.04);
+  const snapBuf = ctx.createBuffer(1, snapLen, ctx.sampleRate);
+  const sd = snapBuf.getChannelData(0);
+  for (let i = 0; i < snapLen; i++) {
+    const t = i / snapLen;
+    sd[i] = (Math.random() * 2 - 1) * Math.exp(-t * 40) * 0.9;
   }
-  dist.curve = curve;
-  dist.oversample = "4x";
+  const snapSrc = ctx.createBufferSource();
+  snapSrc.buffer = snapBuf;
+  const snapHp = ctx.createBiquadFilter();
+  snapHp.type = "highpass";
+  snapHp.frequency.value = 1800;
+  snapHp.Q.value = 8;
+  const snapGain = ctx.createGain();
+  snapGain.gain.setValueAtTime(0.5, ctx.currentTime);
+  snapGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+  snapSrc.connect(snapHp).connect(snapGain).connect(ctx.destination);
+  snapSrc.start(ctx.currentTime + 0.02); // slight delay after tear starts
+  snapSrc.stop(ctx.currentTime + 0.06);
 
-  // Low-mid resonance for body
-  const resonance = ctx.createBiquadFilter();
-  resonance.type = "peaking";
-  resonance.frequency.value = 400;
-  resonance.Q.value = 3;
-  resonance.gain.value = 6;
-
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.4, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-
-  src.connect(dist).connect(resonance).connect(g).connect(ctx.destination);
-  src.start();
-  src.stop(ctx.currentTime + dur);
+  // Low rumble — sub-frequency body
+  const rumbleLen = Math.floor(ctx.sampleRate * dur);
+  const rumbleBuf = ctx.createBuffer(1, rumbleLen, ctx.sampleRate);
+  const rd = rumbleBuf.getChannelData(0);
+  for (let i = 0; i < rumbleLen; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 4);
+    rd[i] = Math.sin(t * 55 * Math.PI * 2) * env * 0.3
+      + Math.sin(t * 38 * Math.PI * 2) * env * 0.2;
+  }
+  const rumbleSrc = ctx.createBufferSource();
+  rumbleSrc.buffer = rumbleBuf;
+  const rumbleLp = ctx.createBiquadFilter();
+  rumbleLp.type = "lowpass";
+  rumbleLp.frequency.value = 120;
+  rumbleLp.Q.value = 2;
+  const rumbleGain = ctx.createGain();
+  rumbleGain.gain.setValueAtTime(0.4, ctx.currentTime);
+  rumbleGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  rumbleSrc.connect(rumbleLp).connect(rumbleGain).connect(ctx.destination);
+  rumbleSrc.start();
+  rumbleSrc.stop(ctx.currentTime + dur);
 }
 
 // Metallic industrial impact for Architect bridge building (noise-only)
