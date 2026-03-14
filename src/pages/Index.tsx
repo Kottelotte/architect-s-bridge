@@ -435,7 +435,8 @@ const Index = () => {
       const hoverPause = hoveredNpc != null && (
         (hoveredNpc.role === "architect" && hoveredNpc.architectState === "idle") ||
         (hoveredNpc.role === "anchor" && !hoveredNpc.roleActivated) ||
-        (hoveredNpc.role === "excavator" && !hoveredNpc.roleActivated)
+        (hoveredNpc.role === "excavator" && !hoveredNpc.roleActivated) ||
+        (hoveredNpc.role === "vessel" && !hoveredNpc.roleActivated)
       );
 
       if (s.pauseTimer > 0) {
