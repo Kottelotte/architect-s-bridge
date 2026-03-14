@@ -5,6 +5,47 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
+// Disturbing scream for false victory
+export function playScream() {
+  const ctx = getCtx();
+  const dur = 0.7;
+  const bufSize = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 3) * (1 - Math.exp(-t * 80));
+    const freq = 900 - t * 400;
+    const vibrato = Math.sin(t * 60) * 0.3;
+    d[i] = (Math.sin(t * freq * Math.PI * 2) * 0.4
+      + Math.sin(t * freq * 1.5 * Math.PI * 2) * 0.2
+      + Math.sin(t * freq * 2.02 * Math.PI * 2) * 0.15
+      + (Math.random() * 2 - 1) * 0.25 * Math.exp(-t * 5)
+      + vibrato * Math.sin(t * freq * 0.5 * Math.PI * 2) * 0.1
+    ) * env;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+
+  const dist = ctx.createWaveShaperNode();
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i / 128) - 1;
+    curve[i] = Math.tanh(x * 3);
+  }
+  dist.curve = curve;
+
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.35, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+
+  src.connect(dist).connect(g).connect(ctx.destination);
+  src.start();
+  src.stop(ctx.currentTime + dur);
+}
+
 // Metallic industrial impact for Architect bridge building (noise-only)
 export function playBuildTick() {
   const ctx = getCtx();
