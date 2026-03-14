@@ -112,42 +112,33 @@ function createLevel2(): LevelDef {
   for (let r = 0; r < ROWS; r++) {
     map[r][COLS - 1] = 1;
   }
-  // Death gate: integrate kill zone into right boundary wall
-  // 4 tiles high at NPC walking height (rows 9-12)
-  for (let r = 9; r <= 12; r++) setTile(map, r, COLS - 1, 2);
+  // Death gate: kill zone raised by 1 tile → rows 8-11 (4 tiles tall)
+  // Bottom of gate (row 12) is now normal wall so NPCs visibly enter before dying
+  for (let r = 8; r <= 11; r++) setTile(map, r, COLS - 1, 2);
 
   // === SECTION A: Spawn platform + Death gate ===
   // Continuous top platform: row 12, cols 3-30
-  // Cols 1-2 are open (left death pit), platform starts at col 3
   for (let c = 3; c <= 30; c++) setTile(map, 12, c, 1);
-
-  // NO large solid block under platform — keep it open and airy
-  // Only a thin lip under the platform edges for visual grounding
-  // (the platform itself at row 12 is the only solid)
 
   // Left death pit: cols 1-2 have no platform, kill tiles at bottom
   for (let c = 1; c <= 2; c++) setTile(map, ROWS - 1, c, 2);
 
-  // Excavator fall hole: cols 3-4 — shifted left for more observation time
-  setTile(map, 12, 3, 0);
-  setTile(map, 12, 4, 0);
-
-  // Headroom: remove ceiling tiles above excavator chamber landing zone
-  // Opens rows 12 at cols 5-8 so NPCs have vertical space after falling
-  for (let c = 5; c <= 8; c++) setTile(map, 12, c, 0);
+  // Excavator fall hole: cols 5-6 — clean vertical drop, no right wall
+  // Open from col 5 leftward to col 3 (no narrow corridor)
+  for (let c = 3; c <= 6; c++) setTile(map, 12, c, 0);
 
   // === SECTION B: Mid platform (Excavator) ===
-  // NPCs fall through hole at cols 3-4, land on mid platform
-  // Mid floor: row 17, cols 3-15
-  for (let c = 3; c <= 15; c++) setTile(map, 17, c, 1);
+  // NPCs fall through hole, land on mid platform
+  // Mid floor: row 17, cols 3-12 (trimmed right to reduce terrain mass)
+  for (let c = 3; c <= 12; c++) setTile(map, 17, c, 1);
 
-  // Wall blocking rightward escape from mid level: col 16, rows 13-17
-  for (let r = 13; r <= 17; r++) setTile(map, r, 16, 1);
+  // Wall blocking rightward escape from mid level: col 13, rows 13-17
+  for (let r = 13; r <= 17; r++) setTile(map, r, 13, 1);
 
   // Solid fill below mid floor (Excavator digs through this)
-  // rows 18-22, cols 3-15
+  // rows 18-22, cols 3-12 (reduced footprint)
   for (let r = 18; r <= 22; r++) {
-    for (let c = 3; c <= 15; c++) setTile(map, r, c, 1);
+    for (let c = 3; c <= 12; c++) setTile(map, r, c, 1);
   }
 
   // Kill tiles under wrong excavation area (cols 3-9)
