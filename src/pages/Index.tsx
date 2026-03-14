@@ -1018,14 +1018,70 @@ const Index = () => {
         }
       }
 
-      // Exit
-      ctx.fillStyle = "#00ff88";
-      ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now / 300);
-      ctx.fillRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = "#00ff88";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(s.exitCol * TILE + 2, s.exitRow * TILE + 2, TILE - 4, TILE - 4);
+      // Exit — with glitch effect on false victory level
+      {
+        const exitX = s.exitCol * TILE + 2;
+        const exitY = s.exitRow * TILE + 2;
+        const exitSize = TILE - 4;
+
+        // Calculate glitch intensity for fake exit (level 3 = intro)
+        let fakeExitGlitch = 0;
+        if (s.currentLevel === 3) {
+          // Find closest alive NPC distance to exit
+          let minDist = Infinity;
+          for (const npc of s.npcs) {
+            if (!npc.isAlive || npc.isRescued || npc.stopsMoving) continue;
+            const dx = (npc.x + NPC_W / 2) - (s.exitCol * TILE + TILE / 2);
+            const dy = (npc.y + NPC_H / 2) - (s.exitRow * TILE + TILE / 2);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDist) minDist = dist;
+          }
+          // Glitch intensifies within 200px, max at 0
+          fakeExitGlitch = Math.max(0, 1 - minDist / 200);
+        }
+
+        if (fakeExitGlitch > 0.05) {
+          // Glitchy fake exit: jitter, brightness flicker, scanlines
+          const jitterX = (Math.random() - 0.5) * fakeExitGlitch * 4;
+          const jitterY = (Math.random() - 0.5) * fakeExitGlitch * 3;
+          const flicker = 0.3 + 0.15 * Math.sin(now / 300) + fakeExitGlitch * 0.3 * Math.random();
+
+          ctx.fillStyle = "#00ff88";
+          ctx.globalAlpha = flicker;
+          ctx.fillRect(exitX + jitterX, exitY + jitterY, exitSize, exitSize);
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#00ff88";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(exitX + jitterX, exitY + jitterY, exitSize, exitSize);
+
+          // Scanline distortion over exit area
+          if (fakeExitGlitch > 0.3) {
+            const scanCount = Math.floor(fakeExitGlitch * 5);
+            for (let sl = 0; sl < scanCount; sl++) {
+              const sy = exitY + Math.random() * exitSize;
+              ctx.fillStyle = `rgba(0, 255, 136, ${fakeExitGlitch * 0.15})`;
+              ctx.fillRect(exitX - 4, sy, exitSize + 8, 1);
+            }
+          }
+
+          // Ghost duplicate at offset
+          if (fakeExitGlitch > 0.5) {
+            ctx.globalAlpha = fakeExitGlitch * 0.2;
+            ctx.fillStyle = "#00ff88";
+            ctx.fillRect(exitX + 3, exitY - 2, exitSize, exitSize);
+            ctx.globalAlpha = 1;
+          }
+        } else {
+          // Normal exit rendering
+          ctx.fillStyle = "#00ff88";
+          ctx.globalAlpha = 0.3 + 0.15 * Math.sin(now / 300);
+          ctx.fillRect(exitX, exitY, exitSize, exitSize);
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#00ff88";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(exitX, exitY, exitSize, exitSize);
+        }
+      }
 
       // NPCs
       for (const npc of s.npcs) {
