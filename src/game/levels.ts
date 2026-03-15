@@ -193,7 +193,7 @@ function createLevel3(): LevelDef {
 
   // === SECTION 2: Mid platform (Anchor section) ===
   // Row 13, cols 1-25 — extended left to wall, gap on right (cols 26-28) for Anchor puzzle
-  for (let c = 1; c <= 25; c++) setTile(map, 13, c, 1);
+  for (let c = 1; c <= 28; c++) setTile(map, 13, c, 1);
 
   // Right wall at col 29, rows 9-12 — stops NPCs, need Anchor before this
   for (let r = 9; r <= 12; r++) setTile(map, r, 29, 1);
