@@ -871,17 +871,19 @@ const Index = () => {
         }
         return;
       }
-      // Ending sequence — black screen with optional typewriter text
-      if (s.transition === "ending_black" || s.transition === "ending_text") {
+      // Ending sequence — black screen with typewriter text
+      if (s.transition === "ending_freeze" || s.transition === "ending_black" || s.transition === "ending_text") {
+        if (s.transition === "ending_freeze") {
+          // Still show the frozen game scene during the freeze period
+          // (fall through to normal draw would cause issues, so draw black)
+        }
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, W, H);
         if (s.transition === "ending_text" && s.transitionText.length > 0) {
           ctx.fillStyle = "#ffffff";
           ctx.font = "28px monospace";
-          const cursor = Math.floor(now / 400) % 2 === 0 ? "█" : "";
-          const displayText = s.transitionText + cursor;
-          const tw = ctx.measureText(displayText).width;
-          ctx.fillText(displayText, (W - tw) / 2, H / 2);
+          const tw = ctx.measureText(s.transitionText).width;
+          ctx.fillText(s.transitionText, (W - tw) / 2, H / 2);
         }
         return;
       }
