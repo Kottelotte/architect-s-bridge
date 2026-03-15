@@ -189,7 +189,7 @@ function createLevel3(): LevelDef {
 
   // === SECTION 1: Upper spawn platform ===
   // Row 8, cols 1-14 — NPCs spawn left, walk right, drop off edge
-  for (let c = 1; c <= 14; c++) setTile(map, 8, c, 1);
+  for (let c = 3; c <= 14; c++) setTile(map, 8, c, 1);
 
   // === SECTION 2: Mid platform (Anchor section) ===
   // Row 13, cols 1-25 — extended left to wall, gap on right (cols 26-28) for Anchor puzzle
