@@ -51,21 +51,28 @@ function initState(levelIndex: number): GameState {
 }
 
 // --- COMPONENT ---
-// Martyr horizon visibility caps per level index
+// --- Martyr Horizon System ---
 const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3, 4: Infinity };
-// Seeded pseudo-random positions for martyrs (asymmetric, clustered)
-function generateMartyrPositions(count: number): number[] {
-  const positions: number[] = [];
-  let seed = 7919;
-  const seededRand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
-  // Generate clustered, irregular positions in 0.1–0.9 range
-  const clusters = [0.2, 0.35, 0.55, 0.7, 0.85];
-  for (let i = 0; i < count; i++) {
-    const cluster = clusters[i % clusters.length];
-    const offset = (seededRand() - 0.5) * 0.12;
-    positions.push(Math.max(0.08, Math.min(0.92, cluster + offset + seededRand() * 0.04)));
-  }
-  return positions;
+
+interface MartyrData {
+  xRatio: number;
+  tier: 1 | 2 | 3;
+  spawnTime: number;
+}
+
+function getMartyrTier(index: number): 1 | 2 | 3 {
+  if (index < 3) return 1;
+  if (index < 7) return 2;
+  return 3;
+}
+
+function generateMartyrXRatio(index: number): number {
+  let seed = 7919 + index * 137;
+  const seededRand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const clusters = [0.15, 0.32, 0.48, 0.68, 0.84];
+  const cluster = clusters[index % clusters.length];
+  const offset = (seededRand() - 0.5) * 0.14;
+  return Math.max(0.08, Math.min(0.92, cluster + offset + seededRand() * 0.04));
 }
 
 const Index = () => {
