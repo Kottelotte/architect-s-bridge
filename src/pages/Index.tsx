@@ -1587,10 +1587,12 @@ const Index = () => {
         }
       }
 
-      // HUD
-      ctx.fillStyle = "#aaaaaa";
-      ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
+      // HUD (hidden during ending sequence)
+      if (s.transition !== "ending_freeze" && s.transition !== "ending_black" && s.transition !== "ending_text") {
+        ctx.fillStyle = "#aaaaaa";
+        ctx.font = "12px monospace";
+        ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
+      }
     };
 
     const loop = (time: number) => {

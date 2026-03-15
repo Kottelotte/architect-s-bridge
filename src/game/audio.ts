@@ -373,3 +373,84 @@ export function stopAmbientDrone() {
   ambientIntervals = [];
   ambientGain = null;
 }
+
+// Deep distant impact for martyr materialization on horizon
+export function playMartyrAppear() {
+  const ctx = getCtx();
+  const dur = 1.2;
+
+  const bufSize = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 2.5);
+    d[i] = Math.sin(t * 35 * Math.PI * 2) * env * 0.25
+      + Math.sin(t * 22 * Math.PI * 2) * env * 0.15
+      + (Math.random() * 2 - 1) * Math.exp(-t * 8) * 0.05;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 80;
+  lp.Q.value = 1.5;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.3, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  src.connect(lp).connect(g).connect(ctx.destination);
+  src.start();
+  src.stop(ctx.currentTime + dur);
+}
+
+// Massive stone gate slam for ending sequence
+export function playGateSlam() {
+  const ctx = getCtx();
+  const dur = 2.0;
+
+  // Heavy impact transient
+  const impactLen = Math.floor(ctx.sampleRate * 0.15);
+  const impactBuf = ctx.createBuffer(1, impactLen, ctx.sampleRate);
+  const id = impactBuf.getChannelData(0);
+  for (let i = 0; i < impactLen; i++) {
+    const t = i / ctx.sampleRate;
+    id[i] = (Math.random() * 2 - 1) * Math.exp(-t * 20) * 0.9;
+  }
+  const impactSrc = ctx.createBufferSource();
+  impactSrc.buffer = impactBuf;
+  const impactLp = ctx.createBiquadFilter();
+  impactLp.type = "lowpass";
+  impactLp.frequency.value = 150;
+  impactLp.Q.value = 4;
+  const impactGain = ctx.createGain();
+  impactGain.gain.setValueAtTime(0.7, ctx.currentTime);
+  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+  impactSrc.connect(impactLp).connect(impactGain).connect(ctx.destination);
+  impactSrc.start();
+  impactSrc.stop(ctx.currentTime + 0.3);
+
+  // Reverberant sub-bass decay
+  const revLen = Math.floor(ctx.sampleRate * dur);
+  const revBuf = ctx.createBuffer(1, revLen, ctx.sampleRate);
+  const rd = revBuf.getChannelData(0);
+  for (let i = 0; i < revLen; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 1.5);
+    rd[i] = (Math.sin(t * 28 * Math.PI * 2) * 0.3
+      + Math.sin(t * 42 * Math.PI * 2) * 0.15
+      + Math.sin(t * 18 * Math.PI * 2) * 0.2) * env
+      + (Math.random() * 2 - 1) * Math.exp(-t * 3) * 0.08;
+  }
+  const revSrc = ctx.createBufferSource();
+  revSrc.buffer = revBuf;
+  const revLp = ctx.createBiquadFilter();
+  revLp.type = "lowpass";
+  revLp.frequency.value = 100;
+  revLp.Q.value = 2;
+  const revGain = ctx.createGain();
+  revGain.gain.setValueAtTime(0.5, ctx.currentTime);
+  revGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  revSrc.connect(revLp).connect(revGain).connect(ctx.destination);
+  revSrc.start();
+  revSrc.stop(ctx.currentTime + dur);
+}
