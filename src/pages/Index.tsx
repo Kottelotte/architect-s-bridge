@@ -576,7 +576,13 @@ const Index = () => {
             npc.isAlive = false;
             npc.deathPhase = "none";
             s.dead++;
-            globalMartyrsRef.current++;
+            const dmi = martyrsRef.current.length;
+            martyrsRef.current.push({
+              xRatio: generateMartyrXRatio(dmi),
+              tier: getMartyrTier(dmi),
+              spawnTime: performance.now(),
+            });
+            playMartyrAppear();
           }
           continue;
         }
