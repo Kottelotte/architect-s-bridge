@@ -753,21 +753,22 @@ const Index = () => {
       h: number, tier: 1 | 2 | 3,
       animProgress: number
     ) => {
-      const crossW = Math.max(3, h * 0.09);
-      const crossArmW = h * 0.65;
-      const crossArmH = Math.max(2, h * 0.055);
+      const crossW = Math.max(4, h * 0.10);
+      const crossArmW = h * 0.70;
+      const crossArmH = Math.max(3, h * 0.065);
       const crossArmY = baseY - h * 0.72;
 
-      const headR = Math.max(1.5, h * 0.045);
-      const torsoW = Math.max(1, h * 0.035);
+      // THICKER body proportions — 2-3x wider than before
+      const headR = Math.max(2.5, h * 0.065);
+      const torsoW = Math.max(3, h * 0.10);      // was 0.035 — now 3x wider
       const torsoH = h * 0.42;
       const torsoTop = baseY - h * 0.68;
-      const armH = Math.max(1, h * 0.02);
-      const legH = h * 0.18;
-      const legW = Math.max(1, h * 0.02);
+      const armH = Math.max(2, h * 0.045);        // was 0.02 — now 2x thicker
+      const legH = h * 0.20;
+      const legW = Math.max(2, h * 0.04);          // was 0.02 — now 2x thicker
 
-      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.65 : 0.75);
-      const scale = 0.9 + animProgress * 0.1;
+      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.70 : 0.80);
+      const scale = 0.85 + animProgress * 0.15;
       const drift = (1 - animProgress) * 5;
 
       c.save();
@@ -776,6 +777,18 @@ const Index = () => {
       c.scale(scale, scale);
       c.translate(-cx, -baseY);
       c.translate(0, -drift);
+
+      // Red atmospheric glow behind large martyrs (tier 2 and 3)
+      if (tier >= 2) {
+        const glowR = h * (tier === 3 ? 1.2 : 0.7);
+        const glowAlpha = tier === 3 ? 0.25 : 0.12;
+        const grad = c.createRadialGradient(cx, baseY - h * 0.5, 0, cx, baseY - h * 0.5, glowR);
+        grad.addColorStop(0, `rgba(120, 15, 15, ${glowAlpha})`);
+        grad.addColorStop(0.5, `rgba(80, 8, 8, ${glowAlpha * 0.5})`);
+        grad.addColorStop(1, "rgba(40, 5, 5, 0)");
+        c.fillStyle = grad;
+        c.fillRect(cx - glowR, baseY - h - glowR * 0.5, glowR * 2, glowR * 1.5);
+      }
 
       // Cross — dark wood, thicker than body
       const crossA = tier === 1 ? 0.7 : tier === 2 ? 0.85 : 0.95;
@@ -787,24 +800,35 @@ const Index = () => {
       if (tier === 1) {
         c.fillStyle = "rgba(40, 37, 33, 0.6)";
       } else if (tier === 2) {
-        c.fillStyle = "rgba(95, 88, 78, 0.75)";
+        c.fillStyle = "rgba(120, 110, 95, 0.80)";
       } else {
-        c.fillStyle = "rgba(216, 211, 200, 0.82)";
+        c.fillStyle = "rgba(216, 211, 200, 0.88)";
       }
-      // Small round head
+      // Round head
       c.beginPath();
-      c.arc(cx, torsoTop - headR * 0.7, headR, 0, Math.PI * 2);
+      c.arc(cx, torsoTop - headR * 0.5, headR, 0, Math.PI * 2);
       c.fill();
-      // Elongated thin torso
-      c.fillRect(cx - torsoW / 2, torsoTop, torsoW, torsoH);
-      // Very long arms stretched horizontally along cross beam
-      const armSpan = crossArmW * 0.88;
+      // Wide torso with slight taper
+      c.beginPath();
+      c.moveTo(cx - torsoW * 0.6, torsoTop);
+      c.lineTo(cx + torsoW * 0.6, torsoTop);
+      c.lineTo(cx + torsoW * 0.45, torsoTop + torsoH);
+      c.lineTo(cx - torsoW * 0.45, torsoTop + torsoH);
+      c.closePath();
+      c.fill();
+      // Arms along cross beam — thick and visible
+      const armSpan = crossArmW * 0.90;
       c.fillRect(cx - armSpan / 2, crossArmY - armH / 2, armSpan, armH);
-      // Thin legs hanging downward
+      // Shoulder joints
+      c.beginPath();
+      c.arc(cx - torsoW * 0.5, crossArmY, armH * 0.8, 0, Math.PI * 2);
+      c.arc(cx + torsoW * 0.5, crossArmY, armH * 0.8, 0, Math.PI * 2);
+      c.fill();
+      // Legs hanging downward — thicker
       const legTop = torsoTop + torsoH;
-      const legSpacing = torsoW * 0.7;
-      c.fillRect(cx - legSpacing, legTop, legW, legH);
-      c.fillRect(cx + legSpacing - legW, legTop, legW, legH);
+      const legSpacing = torsoW * 0.35;
+      c.fillRect(cx - legSpacing - legW / 2, legTop, legW, legH);
+      c.fillRect(cx + legSpacing - legW / 2, legTop, legW, legH);
 
       c.restore();
       c.globalAlpha = 1;
