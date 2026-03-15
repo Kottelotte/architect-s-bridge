@@ -1588,7 +1588,8 @@ const Index = () => {
       }
 
       // HUD (hidden during ending sequence)
-      if (s.transition !== "ending_freeze" && s.transition !== "ending_black" && s.transition !== "ending_text") {
+      const phase = s.transition as string;
+      if (phase !== "ending_freeze" && phase !== "ending_black" && phase !== "ending_text") {
         ctx.fillStyle = "#aaaaaa";
         ctx.font = "12px monospace";
         ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
