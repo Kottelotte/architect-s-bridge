@@ -746,6 +746,70 @@ const Index = () => {
       }
     };
 
+    // Draw a crucified humanoid silhouette on the horizon
+    const drawCrucifiedMartyr = (
+      c: CanvasRenderingContext2D,
+      cx: number, baseY: number,
+      h: number, tier: 1 | 2 | 3,
+      animProgress: number
+    ) => {
+      const crossW = Math.max(3, h * 0.09);
+      const crossArmW = h * 0.65;
+      const crossArmH = Math.max(2, h * 0.055);
+      const crossArmY = baseY - h * 0.72;
+
+      const headR = Math.max(1.5, h * 0.045);
+      const torsoW = Math.max(1, h * 0.035);
+      const torsoH = h * 0.42;
+      const torsoTop = baseY - h * 0.68;
+      const armH = Math.max(1, h * 0.02);
+      const legH = h * 0.18;
+      const legW = Math.max(1, h * 0.02);
+
+      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.65 : 0.75);
+      const scale = 0.9 + animProgress * 0.1;
+      const drift = (1 - animProgress) * 5;
+
+      c.save();
+      c.globalAlpha = alpha;
+      c.translate(cx, baseY);
+      c.scale(scale, scale);
+      c.translate(-cx, -baseY);
+      c.translate(0, -drift);
+
+      // Cross — dark wood, thicker than body
+      const crossA = tier === 1 ? 0.7 : tier === 2 ? 0.85 : 0.95;
+      c.fillStyle = `rgba(35, 30, 25, ${crossA})`;
+      c.fillRect(cx - crossW / 2, baseY - h, crossW, h);
+      c.fillRect(cx - crossArmW / 2, crossArmY - crossArmH / 2, crossArmW, crossArmH);
+
+      // Body — emerges from darkness as tier increases
+      if (tier === 1) {
+        c.fillStyle = "rgba(40, 37, 33, 0.6)";
+      } else if (tier === 2) {
+        c.fillStyle = "rgba(95, 88, 78, 0.75)";
+      } else {
+        c.fillStyle = "rgba(216, 211, 200, 0.82)";
+      }
+      // Small round head
+      c.beginPath();
+      c.arc(cx, torsoTop - headR * 0.7, headR, 0, Math.PI * 2);
+      c.fill();
+      // Elongated thin torso
+      c.fillRect(cx - torsoW / 2, torsoTop, torsoW, torsoH);
+      // Very long arms stretched horizontally along cross beam
+      const armSpan = crossArmW * 0.88;
+      c.fillRect(cx - armSpan / 2, crossArmY - armH / 2, armSpan, armH);
+      // Thin legs hanging downward
+      const legTop = torsoTop + torsoH;
+      const legSpacing = torsoW * 0.7;
+      c.fillRect(cx - legSpacing, legTop, legW, legH);
+      c.fillRect(cx + legSpacing - legW, legTop, legW, legH);
+
+      c.restore();
+      c.globalAlpha = 1;
+    };
+
     const draw = (now: number) => {
       const s = stateRef.current;
       ctx.clearRect(0, 0, W, H);
