@@ -192,8 +192,8 @@ function createLevel3(): LevelDef {
   for (let c = 1; c <= 14; c++) setTile(map, 8, c, 1);
 
   // === SECTION 2: Mid platform (Anchor section) ===
-  // Row 13, cols 10-28 — NPCs land here after dropping from spawn
-  for (let c = 10; c <= 28; c++) setTile(map, 13, c, 1);
+  // Row 13, cols 1-25 — extended left to wall, gap on right (cols 26-28) for Anchor puzzle
+  for (let c = 1; c <= 25; c++) setTile(map, 13, c, 1);
 
   // Right wall at col 29, rows 9-12 — stops NPCs, need Anchor before this
   for (let r = 9; r <= 12; r++) setTile(map, r, 29, 1);
