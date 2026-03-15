@@ -890,32 +890,60 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
-      // --- Martyr Horizon: cruciform silhouettes on the mega-distant ridge ---
+      // --- Martyr Horizon: crucified humanoid silhouettes across 3 terrain tiers ---
+      // Drawn after mega ridge so closer terrain layers naturally occlude lower portions
       {
         const cap = MARTYR_CAPS[s.currentLevel] ?? Infinity;
-        const visibleMartyrs = Math.min(globalMartyrsRef.current, cap);
-        const positions = martyrPositionsRef.current;
-        if (visibleMartyrs > 0) {
-          ctx.fillStyle = "rgba(55, 58, 72, 0.45)";
-          for (let mi = 0; mi < visibleMartyrs; mi++) {
-            const xr = positions[mi] ?? 0.5;
-            const mx = W * xr + megaParallax;
-            const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
-            const tilt = (xr - 0.5) * 4;
-            const ridgeY = megaBaseY + tilt + 80 - 70 * bell
-              + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
-              + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
-            const bodyH = 6;
-            const bodyW = 1.5;
-            const armW = 4;
-            const armH = 1;
-            const headR = 1;
-            const baseY = ridgeY - 1;
-            ctx.fillRect(mx - bodyW / 2, baseY - bodyH, bodyW, bodyH);
-            ctx.fillRect(mx - armW / 2, baseY - bodyH * 0.65, armW, armH);
-            ctx.beginPath();
-            ctx.arc(mx, baseY - bodyH - headR * 0.5, headR, 0, Math.PI * 2);
-            ctx.fill();
+        const allMartyrs = martyrsRef.current;
+        const visibleCount = Math.min(allMartyrs.length, cap);
+
+        if (visibleCount > 0) {
+          // Terrain Y helpers matching each landscape layer
+          const hillParallaxM = Math.sin(now / 80000) * 4;
+          const hillBaseYM = H * 0.41;
+          const farParallaxM = Math.sin(now / 60000) * 10;
+          const horizonYM = H * 0.52;
+
+          // Draw tier 1 first (farthest), then 2, then 3 (closest)
+          for (let ti = 1 as 1 | 2 | 3; ti <= 3; ti++) {
+            for (let mi = 0; mi < visibleCount; mi++) {
+              const m = allMartyrs[mi];
+              if (m.tier !== ti) continue;
+              const xr = m.xRatio;
+              let mx: number, my: number, mh: number;
+
+              if (m.tier === 1) {
+                // On mega-distant ridge
+                const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
+                const tilt = (xr - 0.5) * 4;
+                my = megaBaseY + tilt + 80 - 70 * bell
+                  + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
+                  + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
+                mx = W * xr + megaParallax;
+                mh = 22 + ((xr * 1000) % 8);
+              } else if (m.tier === 2) {
+                // On distant hill
+                const bell = Math.exp(-Math.pow((xr - 0.48) / 0.26, 2));
+                const tilt = (xr - 0.5) * 14;
+                my = hillBaseYM + tilt + 50 - 52 * bell
+                  + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
+                mx = W * xr + hillParallaxM;
+                mh = 60 + ((xr * 1000) % 20);
+              } else {
+                // On far terrain horizon
+                const tilt = (xr - 0.5) * 18;
+                my = horizonYM + tilt
+                  - 30 * Math.sin(xr * Math.PI * 1.2)
+                  - 18 * Math.sin(xr * Math.PI * 2.8 + 0.5)
+                  - 8 * Math.cos(xr * Math.PI * 4.5 + 1.2);
+                mx = W * xr + farParallaxM * 0.2;
+                mh = 120 + ((xr * 1000) % 60);
+              }
+
+              const elapsed = now - m.spawnTime;
+              const animProgress = Math.min(1, elapsed / 700);
+              drawCrucifiedMartyr(ctx, mx, my, mh, m.tier as 1 | 2 | 3, animProgress);
+            }
           }
         }
       }
