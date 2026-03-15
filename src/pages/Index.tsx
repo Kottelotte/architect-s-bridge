@@ -498,7 +498,7 @@ const Index = () => {
         if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
           s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
-          s.transitionTimer = TYPEWRITER_SPEED * 2;
+          s.transitionTimer = 80; // smooth consistent speed, no stutter
         }
       }
     };
