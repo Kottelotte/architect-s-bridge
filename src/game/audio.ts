@@ -424,8 +424,8 @@ export function playGateSlam() {
   impactLp.frequency.value = 150;
   impactLp.Q.value = 4;
   const impactGain = ctx.createGain();
-  impactGain.gain.setValueAtTime(0.7, ctx.currentTime);
-  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+  impactGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
   impactSrc.connect(impactLp).connect(impactGain).connect(ctx.destination);
   impactSrc.start();
   impactSrc.stop(ctx.currentTime + 0.3);
