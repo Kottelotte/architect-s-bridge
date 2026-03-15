@@ -487,6 +487,7 @@ const Index = () => {
       else if (s.transition === "ending_freeze" && s.transitionTimer <= 0) {
         s.transition = "ending_black";
         s.transitionTimer = 800;
+        stopTransitionHum();
         playGateSlam();
       } else if (s.transition === "ending_black" && s.transitionTimer <= 0) {
         s.transition = "ending_text";
