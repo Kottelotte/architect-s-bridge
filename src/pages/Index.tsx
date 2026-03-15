@@ -628,7 +628,13 @@ const Index = () => {
             npc.deathPhase = "none";
             npc.countsAsDead = true;
             s.dead++;
-            globalMartyrsRef.current++;
+            const vmi = martyrsRef.current.length;
+            martyrsRef.current.push({
+              xRatio: generateMartyrXRatio(vmi),
+              tier: getMartyrTier(vmi),
+              spawnTime: performance.now(),
+            });
+            playMartyrAppear();
           }
           continue;
         }
