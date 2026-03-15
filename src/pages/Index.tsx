@@ -61,9 +61,9 @@ interface MartyrData {
 }
 
 function getMartyrTier(index: number): 1 | 2 | 3 {
-  if (index < 3) return 1;
-  if (index < 7) return 2;
-  return 3;
+  if (index === 0) return 1;   // Only ONE on farthest ridge
+  if (index < 3) return 2;    // Next 2 on mid hill
+  return 3;                    // All others on foreground — advancing toward player
 }
 
 function generateMartyrXRatio(index: number): number {
