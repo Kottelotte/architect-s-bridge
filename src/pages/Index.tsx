@@ -424,27 +424,32 @@ const Index = () => {
       }
       // False victory phases
       else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
-        // Start slash sequence (3 slashes, ~60ms apart = 180ms total)
         s.transition = "fv_slash";
         s.transitionTimer = 180;
-        s.transitionCharIndex = 0; // reuse as slash counter
+        s.transitionCharIndex = 0;
       } else if (s.transition === "fv_slash") {
-        // Count slashes by charIndex: 0,1,2
         const slashProgress = 180 - s.transitionTimer;
         const newSlashCount = Math.min(3, Math.floor(slashProgress / 60));
         if (newSlashCount > s.transitionCharIndex) {
           s.transitionCharIndex = newSlashCount;
         }
         if (s.transitionTimer <= 0) {
-          // Play destruction sound, kill NPC, go to text phase
           playFleshTear();
+          let martyrAdded = false;
           for (const npc of s.npcs) {
             if (npc.isAlive && npc.stopsMoving) {
               npc.deathPhase = "stasis";
               npc.deathTimer = 400;
-              globalMartyrsRef.current++;
+              const mi = martyrsRef.current.length;
+              martyrsRef.current.push({
+                xRatio: generateMartyrXRatio(mi),
+                tier: getMartyrTier(mi),
+                spawnTime: performance.now(),
+              });
+              martyrAdded = true;
             }
           }
+          if (martyrAdded) playMartyrAppear();
           s.transition = "fv_scream";
           s.transitionTimer = 1200;
           s.transitionText = "";
@@ -452,13 +457,11 @@ const Index = () => {
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
-        // Typewriter effect: one char per tick
         if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
           s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
-          s.transitionTimer = TYPEWRITER_SPEED * 2.5; // slower for dramatic effect
+          s.transitionTimer = TYPEWRITER_SPEED * 2.5;
         }
-        // Hold after complete
         if (s.transitionCharIndex >= targetText.length) {
           s.transitionTimer -= dt;
           if (s.transitionTimer <= -600) {
@@ -469,16 +472,34 @@ const Index = () => {
         }
       } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Load real Level 3 (index 4) with same survivor count
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
           const ns = initState(nextLevel);
           ns.totalNpc = survivorsRef.current;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
+          levelStartMartyrCountRef.current = martyrsRef.current.length;
         }
         s.transition = "none";
         s.inputDisabled = false;
+      }
+      // Ending sequence phases
+      else if (s.transition === "ending_freeze" && s.transitionTimer <= 0) {
+        s.transition = "ending_black";
+        s.transitionTimer = 800;
+        playGateSlam();
+      } else if (s.transition === "ending_black" && s.transitionTimer <= 0) {
+        s.transition = "ending_text";
+        s.transitionTimer = TYPEWRITER_SPEED;
+        s.transitionCharIndex = 0;
+        s.transitionText = "";
+      } else if (s.transition === "ending_text") {
+        const targetText = "You're gonna carry that weight.";
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED * 2;
+        }
       }
     };
 
