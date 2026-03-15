@@ -191,6 +191,13 @@ function createLevel3(): LevelDef {
   // Row 8, cols 1-14 — NPCs spawn left, walk right, drop off edge
   for (let c = 1; c <= 14; c++) setTile(map, 8, c, 1);
 
+  // Extended left wing: row 10, cols 1-5
+  for (let c = 1; c <= 5; c++) setTile(map, 10, c, 1);
+
+  // Death gap on right side: row 10, cols 17-18 (ensure air)
+  setTile(map, 10, 17, 0);
+  setTile(map, 10, 18, 0);
+
   // === SECTION 2: Mid platform (Anchor section) ===
   // Row 13, cols 10-28 — NPCs land here after dropping from spawn
   for (let c = 10; c <= 28; c++) setTile(map, 13, c, 1);
