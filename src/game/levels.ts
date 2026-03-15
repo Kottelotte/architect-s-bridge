@@ -189,12 +189,12 @@ function createLevel3(): LevelDef {
 
   // === SECTION 1: Upper spawn platform ===
   // Row 8, cols 1-14 — NPCs spawn left, walk right, drop off edge
-  for (let c = 3; c <= 14; c++) setTile(map, 8, c, 1);
+  for (let c = 1; c <= 14; c++) setTile(map, 8, c, 1);
 
   // === SECTION 2: Mid platform (Anchor section) ===
-  // Row 13, cols 1-25 — extended left to wall, gap on right (cols 26-28) for Anchor puzzle
-  for (let c = 1; c <= 25; c++) setTile(map, 13, c, 1);
-  // Restore col 28 floor tile (gap is now cols 26-27 only)
+  // Left wall col 0 stays solid. Cols 2-5 are empty (fall gap). Platform cols 6-25.
+  for (let c = 6; c <= 25; c++) setTile(map, 13, c, 1);
+  // Anchor gap: cols 26-27 empty. Restore col 28.
   setTile(map, 13, 28, 1);
 
   // Right wall at col 29, rows 9-12 — stops NPCs, need Anchor before this
