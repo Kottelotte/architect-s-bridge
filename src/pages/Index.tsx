@@ -61,9 +61,9 @@ interface MartyrData {
 }
 
 function getMartyrTier(index: number): 1 | 2 | 3 {
-  if (index < 3) return 1;
-  if (index < 7) return 2;
-  return 3;
+  if (index === 0) return 1;   // Only ONE on farthest ridge
+  if (index < 3) return 2;    // Next 2 on mid hill
+  return 3;                    // All others on foreground — advancing toward player
 }
 
 function generateMartyrXRatio(index: number): number {
@@ -487,6 +487,7 @@ const Index = () => {
       else if (s.transition === "ending_freeze" && s.transitionTimer <= 0) {
         s.transition = "ending_black";
         s.transitionTimer = 800;
+        stopTransitionHum();
         playGateSlam();
       } else if (s.transition === "ending_black" && s.transitionTimer <= 0) {
         s.transition = "ending_text";
@@ -498,7 +499,7 @@ const Index = () => {
         if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
           s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
-          s.transitionTimer = TYPEWRITER_SPEED * 2;
+          s.transitionTimer = 80; // smooth consistent speed, no stutter
         }
       }
     };
@@ -753,21 +754,22 @@ const Index = () => {
       h: number, tier: 1 | 2 | 3,
       animProgress: number
     ) => {
-      const crossW = Math.max(3, h * 0.09);
-      const crossArmW = h * 0.65;
-      const crossArmH = Math.max(2, h * 0.055);
+      const crossW = Math.max(4, h * 0.10);
+      const crossArmW = h * 0.70;
+      const crossArmH = Math.max(3, h * 0.065);
       const crossArmY = baseY - h * 0.72;
 
-      const headR = Math.max(1.5, h * 0.045);
-      const torsoW = Math.max(1, h * 0.035);
+      // THICKER body proportions — 2-3x wider than before
+      const headR = Math.max(2.5, h * 0.065);
+      const torsoW = Math.max(3, h * 0.10);      // was 0.035 — now 3x wider
       const torsoH = h * 0.42;
       const torsoTop = baseY - h * 0.68;
-      const armH = Math.max(1, h * 0.02);
-      const legH = h * 0.18;
-      const legW = Math.max(1, h * 0.02);
+      const armH = Math.max(2, h * 0.045);        // was 0.02 — now 2x thicker
+      const legH = h * 0.20;
+      const legW = Math.max(2, h * 0.04);          // was 0.02 — now 2x thicker
 
-      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.65 : 0.75);
-      const scale = 0.9 + animProgress * 0.1;
+      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.70 : 0.80);
+      const scale = 0.85 + animProgress * 0.15;
       const drift = (1 - animProgress) * 5;
 
       c.save();
@@ -776,6 +778,18 @@ const Index = () => {
       c.scale(scale, scale);
       c.translate(-cx, -baseY);
       c.translate(0, -drift);
+
+      // Red atmospheric glow behind large martyrs (tier 2 and 3)
+      if (tier >= 2) {
+        const glowR = h * (tier === 3 ? 1.2 : 0.7);
+        const glowAlpha = tier === 3 ? 0.25 : 0.12;
+        const grad = c.createRadialGradient(cx, baseY - h * 0.5, 0, cx, baseY - h * 0.5, glowR);
+        grad.addColorStop(0, `rgba(120, 15, 15, ${glowAlpha})`);
+        grad.addColorStop(0.5, `rgba(80, 8, 8, ${glowAlpha * 0.5})`);
+        grad.addColorStop(1, "rgba(40, 5, 5, 0)");
+        c.fillStyle = grad;
+        c.fillRect(cx - glowR, baseY - h - glowR * 0.5, glowR * 2, glowR * 1.5);
+      }
 
       // Cross — dark wood, thicker than body
       const crossA = tier === 1 ? 0.7 : tier === 2 ? 0.85 : 0.95;
@@ -787,24 +801,35 @@ const Index = () => {
       if (tier === 1) {
         c.fillStyle = "rgba(40, 37, 33, 0.6)";
       } else if (tier === 2) {
-        c.fillStyle = "rgba(95, 88, 78, 0.75)";
+        c.fillStyle = "rgba(120, 110, 95, 0.80)";
       } else {
-        c.fillStyle = "rgba(216, 211, 200, 0.82)";
+        c.fillStyle = "rgba(216, 211, 200, 0.88)";
       }
-      // Small round head
+      // Round head
       c.beginPath();
-      c.arc(cx, torsoTop - headR * 0.7, headR, 0, Math.PI * 2);
+      c.arc(cx, torsoTop - headR * 0.5, headR, 0, Math.PI * 2);
       c.fill();
-      // Elongated thin torso
-      c.fillRect(cx - torsoW / 2, torsoTop, torsoW, torsoH);
-      // Very long arms stretched horizontally along cross beam
-      const armSpan = crossArmW * 0.88;
+      // Wide torso with slight taper
+      c.beginPath();
+      c.moveTo(cx - torsoW * 0.6, torsoTop);
+      c.lineTo(cx + torsoW * 0.6, torsoTop);
+      c.lineTo(cx + torsoW * 0.45, torsoTop + torsoH);
+      c.lineTo(cx - torsoW * 0.45, torsoTop + torsoH);
+      c.closePath();
+      c.fill();
+      // Arms along cross beam — thick and visible
+      const armSpan = crossArmW * 0.90;
       c.fillRect(cx - armSpan / 2, crossArmY - armH / 2, armSpan, armH);
-      // Thin legs hanging downward
+      // Shoulder joints
+      c.beginPath();
+      c.arc(cx - torsoW * 0.5, crossArmY, armH * 0.8, 0, Math.PI * 2);
+      c.arc(cx + torsoW * 0.5, crossArmY, armH * 0.8, 0, Math.PI * 2);
+      c.fill();
+      // Legs hanging downward — thicker
       const legTop = torsoTop + torsoH;
-      const legSpacing = torsoW * 0.7;
-      c.fillRect(cx - legSpacing, legTop, legW, legH);
-      c.fillRect(cx + legSpacing - legW, legTop, legW, legH);
+      const legSpacing = torsoW * 0.35;
+      c.fillRect(cx - legSpacing - legW / 2, legTop, legW, legH);
+      c.fillRect(cx + legSpacing - legW / 2, legTop, legW, legH);
 
       c.restore();
       c.globalAlpha = 1;
@@ -847,17 +872,19 @@ const Index = () => {
         }
         return;
       }
-      // Ending sequence — black screen with optional typewriter text
-      if (s.transition === "ending_black" || s.transition === "ending_text") {
+      // Ending sequence — black screen with typewriter text
+      if (s.transition === "ending_freeze" || s.transition === "ending_black" || s.transition === "ending_text") {
+        if (s.transition === "ending_freeze") {
+          // Still show the frozen game scene during the freeze period
+          // (fall through to normal draw would cause issues, so draw black)
+        }
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, W, H);
         if (s.transition === "ending_text" && s.transitionText.length > 0) {
           ctx.fillStyle = "#ffffff";
           ctx.font = "28px monospace";
-          const cursor = Math.floor(now / 400) % 2 === 0 ? "█" : "";
-          const displayText = s.transitionText + cursor;
-          const tw = ctx.measureText(displayText).width;
-          ctx.fillText(displayText, (W - tw) / 2, H / 2);
+          const tw = ctx.measureText(s.transitionText).width;
+          ctx.fillText(s.transitionText, (W - tw) / 2, H / 2);
         }
         return;
       }
@@ -913,31 +940,31 @@ const Index = () => {
               let mx: number, my: number, mh: number;
 
               if (m.tier === 1) {
-                // On mega-distant ridge
+                // On mega-distant ridge — single small figure
                 const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
                 const tilt = (xr - 0.5) * 4;
                 my = megaBaseY + tilt + 80 - 70 * bell
                   + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
                   + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
                 mx = W * xr + megaParallax;
-                mh = 22 + ((xr * 1000) % 8);
+                mh = 25 + ((xr * 1000) % 8);
               } else if (m.tier === 2) {
-                // On distant hill
+                // On distant hill — mid-sized
                 const bell = Math.exp(-Math.pow((xr - 0.48) / 0.26, 2));
                 const tilt = (xr - 0.5) * 14;
                 my = hillBaseYM + tilt + 50 - 52 * bell
                   + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
                 mx = W * xr + hillParallaxM;
-                mh = 60 + ((xr * 1000) % 20);
+                mh = 75 + ((xr * 1000) % 20);
               } else {
-                // On far terrain horizon
+                // Foreground — large, advancing toward player
                 const tilt = (xr - 0.5) * 18;
-                my = horizonYM + tilt
+                my = horizonYM + tilt + 20
                   - 30 * Math.sin(xr * Math.PI * 1.2)
                   - 18 * Math.sin(xr * Math.PI * 2.8 + 0.5)
                   - 8 * Math.cos(xr * Math.PI * 4.5 + 1.2);
                 mx = W * xr + farParallaxM * 0.2;
-                mh = 120 + ((xr * 1000) % 60);
+                mh = 160 + ((xr * 1000) % 50);
               }
 
               const elapsed = now - m.spawnTime;

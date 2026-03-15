@@ -374,29 +374,30 @@ export function stopAmbientDrone() {
   ambientGain = null;
 }
 
-// Deep distant impact for martyr materialization on horizon
+// Deep distant impact for martyr materialization on horizon — LOUD
 export function playMartyrAppear() {
   const ctx = getCtx();
-  const dur = 1.2;
+  const dur = 1.5;
 
   const bufSize = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < bufSize; i++) {
     const t = i / ctx.sampleRate;
-    const env = Math.exp(-t * 2.5);
-    d[i] = Math.sin(t * 35 * Math.PI * 2) * env * 0.25
-      + Math.sin(t * 22 * Math.PI * 2) * env * 0.15
-      + (Math.random() * 2 - 1) * Math.exp(-t * 8) * 0.05;
+    const env = Math.exp(-t * 2.0);
+    d[i] = Math.sin(t * 32 * Math.PI * 2) * env * 0.5
+      + Math.sin(t * 20 * Math.PI * 2) * env * 0.35
+      + Math.sin(t * 48 * Math.PI * 2) * env * 0.15
+      + (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.12;
   }
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const lp = ctx.createBiquadFilter();
   lp.type = "lowpass";
-  lp.frequency.value = 80;
-  lp.Q.value = 1.5;
+  lp.frequency.value = 100;
+  lp.Q.value = 2;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.3, ctx.currentTime);
+  g.gain.setValueAtTime(0.8, ctx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
   src.connect(lp).connect(g).connect(ctx.destination);
   src.start();
@@ -423,8 +424,8 @@ export function playGateSlam() {
   impactLp.frequency.value = 150;
   impactLp.Q.value = 4;
   const impactGain = ctx.createGain();
-  impactGain.gain.setValueAtTime(0.7, ctx.currentTime);
-  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+  impactGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
   impactSrc.connect(impactLp).connect(impactGain).connect(ctx.destination);
   impactSrc.start();
   impactSrc.stop(ctx.currentTime + 0.3);
@@ -448,7 +449,7 @@ export function playGateSlam() {
   revLp.frequency.value = 100;
   revLp.Q.value = 2;
   const revGain = ctx.createGain();
-  revGain.gain.setValueAtTime(0.5, ctx.currentTime);
+  revGain.gain.setValueAtTime(0.85, ctx.currentTime);
   revGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
   revSrc.connect(revLp).connect(revGain).connect(ctx.destination);
   revSrc.start();
