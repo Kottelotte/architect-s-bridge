@@ -7,7 +7,7 @@ import {
   TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
-import { playBuildTick, playAnchorClick, playFleshTear, startTransitionHum, stopTransitionHum, startAmbientDrone } from "../game/audio";
+import { playBuildTick, playAnchorClick, playFleshTear, startTransitionHum, stopTransitionHum, startAmbientDrone, playMartyrAppear, playGateSlam } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
@@ -51,28 +51,35 @@ function initState(levelIndex: number): GameState {
 }
 
 // --- COMPONENT ---
-// Martyr horizon visibility caps per level index
+// --- Martyr Horizon System ---
 const MARTYR_CAPS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 3, 4: Infinity };
-// Seeded pseudo-random positions for martyrs (asymmetric, clustered)
-function generateMartyrPositions(count: number): number[] {
-  const positions: number[] = [];
-  let seed = 7919;
-  const seededRand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
-  // Generate clustered, irregular positions in 0.1–0.9 range
-  const clusters = [0.2, 0.35, 0.55, 0.7, 0.85];
-  for (let i = 0; i < count; i++) {
-    const cluster = clusters[i % clusters.length];
-    const offset = (seededRand() - 0.5) * 0.12;
-    positions.push(Math.max(0.08, Math.min(0.92, cluster + offset + seededRand() * 0.04)));
-  }
-  return positions;
+
+interface MartyrData {
+  xRatio: number;
+  tier: 1 | 2 | 3;
+  spawnTime: number;
+}
+
+function getMartyrTier(index: number): 1 | 2 | 3 {
+  if (index < 3) return 1;
+  if (index < 7) return 2;
+  return 3;
+}
+
+function generateMartyrXRatio(index: number): number {
+  let seed = 7919 + index * 137;
+  const seededRand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const clusters = [0.15, 0.32, 0.48, 0.68, 0.84];
+  const cluster = clusters[index % clusters.length];
+  const offset = (seededRand() - 0.5) * 0.14;
+  return Math.max(0.08, Math.min(0.92, cluster + offset + seededRand() * 0.04));
 }
 
 const Index = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(initState(0));
-  const globalMartyrsRef = useRef<number>(0);
-  const martyrPositionsRef = useRef<number[]>(generateMartyrPositions(50));
+  const martyrsRef = useRef<MartyrData[]>([]);
+  const levelStartMartyrCountRef = useRef<number>(0);
   const survivorsRef = useRef<number>(TOTAL_NPCS);
 
   const getNpcAt = useCallback((x: number, y: number): NPC | null => {
@@ -377,9 +384,14 @@ const Index = () => {
           ns.totalNpc = rescued;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
+          levelStartMartyrCountRef.current = martyrsRef.current.length;
+          s.transition = "none";
+          s.inputDisabled = false;
+        } else {
+          // Final level completed — ending sequence
+          s.transition = "ending_freeze";
+          s.transitionTimer = 1200;
         }
-        s.transition = "none";
-        s.inputDisabled = false;
       } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
         s.transition = "fail_typewriter";
         s.transitionTimer = TYPEWRITER_SPEED;
@@ -400,6 +412,8 @@ const Index = () => {
         }
       } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
+        // Reset martyrs to level-start count (discard failed-run martyrs)
+        martyrsRef.current = martyrsRef.current.slice(0, levelStartMartyrCountRef.current);
         // Reload same level with same survivor count
         const ns = initState(s.currentLevel);
         ns.totalNpc = survivorsRef.current;
@@ -410,27 +424,32 @@ const Index = () => {
       }
       // False victory phases
       else if (s.transition === "fv_freeze" && s.transitionTimer <= 0) {
-        // Start slash sequence (3 slashes, ~60ms apart = 180ms total)
         s.transition = "fv_slash";
         s.transitionTimer = 180;
-        s.transitionCharIndex = 0; // reuse as slash counter
+        s.transitionCharIndex = 0;
       } else if (s.transition === "fv_slash") {
-        // Count slashes by charIndex: 0,1,2
         const slashProgress = 180 - s.transitionTimer;
         const newSlashCount = Math.min(3, Math.floor(slashProgress / 60));
         if (newSlashCount > s.transitionCharIndex) {
           s.transitionCharIndex = newSlashCount;
         }
         if (s.transitionTimer <= 0) {
-          // Play destruction sound, kill NPC, go to text phase
           playFleshTear();
+          let martyrAdded = false;
           for (const npc of s.npcs) {
             if (npc.isAlive && npc.stopsMoving) {
               npc.deathPhase = "stasis";
               npc.deathTimer = 400;
-              globalMartyrsRef.current++;
+              const mi = martyrsRef.current.length;
+              martyrsRef.current.push({
+                xRatio: generateMartyrXRatio(mi),
+                tier: getMartyrTier(mi),
+                spawnTime: performance.now(),
+              });
+              martyrAdded = true;
             }
           }
+          if (martyrAdded) playMartyrAppear();
           s.transition = "fv_scream";
           s.transitionTimer = 1200;
           s.transitionText = "";
@@ -438,13 +457,11 @@ const Index = () => {
         }
       } else if (s.transition === "fv_scream") {
         const targetText = "NOT YET";
-        // Typewriter effect: one char per tick
         if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
           s.transitionText += targetText[s.transitionCharIndex];
           s.transitionCharIndex++;
-          s.transitionTimer = TYPEWRITER_SPEED * 2.5; // slower for dramatic effect
+          s.transitionTimer = TYPEWRITER_SPEED * 2.5;
         }
-        // Hold after complete
         if (s.transitionCharIndex >= targetText.length) {
           s.transitionTimer -= dt;
           if (s.transitionTimer <= -600) {
@@ -455,16 +472,34 @@ const Index = () => {
         }
       } else if (s.transition === "fv_static" && s.transitionTimer <= 0) {
         stopTransitionHum();
-        // Load real Level 3 (index 4) with same survivor count
         const nextLevel = s.currentLevel + 1;
         if (nextLevel < LEVELS.length) {
           const ns = initState(nextLevel);
           ns.totalNpc = survivorsRef.current;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
+          levelStartMartyrCountRef.current = martyrsRef.current.length;
         }
         s.transition = "none";
         s.inputDisabled = false;
+      }
+      // Ending sequence phases
+      else if (s.transition === "ending_freeze" && s.transitionTimer <= 0) {
+        s.transition = "ending_black";
+        s.transitionTimer = 800;
+        playGateSlam();
+      } else if (s.transition === "ending_black" && s.transitionTimer <= 0) {
+        s.transition = "ending_text";
+        s.transitionTimer = TYPEWRITER_SPEED;
+        s.transitionCharIndex = 0;
+        s.transitionText = "";
+      } else if (s.transition === "ending_text") {
+        const targetText = "You're gonna carry that weight.";
+        if (s.transitionTimer <= 0 && s.transitionCharIndex < targetText.length) {
+          s.transitionText += targetText[s.transitionCharIndex];
+          s.transitionCharIndex++;
+          s.transitionTimer = TYPEWRITER_SPEED * 2;
+        }
       }
     };
 
@@ -541,7 +576,13 @@ const Index = () => {
             npc.isAlive = false;
             npc.deathPhase = "none";
             s.dead++;
-            globalMartyrsRef.current++;
+            const dmi = martyrsRef.current.length;
+            martyrsRef.current.push({
+              xRatio: generateMartyrXRatio(dmi),
+              tier: getMartyrTier(dmi),
+              spawnTime: performance.now(),
+            });
+            playMartyrAppear();
           }
           continue;
         }
@@ -587,7 +628,13 @@ const Index = () => {
             npc.deathPhase = "none";
             npc.countsAsDead = true;
             s.dead++;
-            globalMartyrsRef.current++;
+            const vmi = martyrsRef.current.length;
+            martyrsRef.current.push({
+              xRatio: generateMartyrXRatio(vmi),
+              tier: getMartyrTier(vmi),
+              spawnTime: performance.now(),
+            });
+            playMartyrAppear();
           }
           continue;
         }
@@ -699,6 +746,70 @@ const Index = () => {
       }
     };
 
+    // Draw a crucified humanoid silhouette on the horizon
+    const drawCrucifiedMartyr = (
+      c: CanvasRenderingContext2D,
+      cx: number, baseY: number,
+      h: number, tier: 1 | 2 | 3,
+      animProgress: number
+    ) => {
+      const crossW = Math.max(3, h * 0.09);
+      const crossArmW = h * 0.65;
+      const crossArmH = Math.max(2, h * 0.055);
+      const crossArmY = baseY - h * 0.72;
+
+      const headR = Math.max(1.5, h * 0.045);
+      const torsoW = Math.max(1, h * 0.035);
+      const torsoH = h * 0.42;
+      const torsoTop = baseY - h * 0.68;
+      const armH = Math.max(1, h * 0.02);
+      const legH = h * 0.18;
+      const legW = Math.max(1, h * 0.02);
+
+      const alpha = animProgress * (tier === 1 ? 0.55 : tier === 2 ? 0.65 : 0.75);
+      const scale = 0.9 + animProgress * 0.1;
+      const drift = (1 - animProgress) * 5;
+
+      c.save();
+      c.globalAlpha = alpha;
+      c.translate(cx, baseY);
+      c.scale(scale, scale);
+      c.translate(-cx, -baseY);
+      c.translate(0, -drift);
+
+      // Cross — dark wood, thicker than body
+      const crossA = tier === 1 ? 0.7 : tier === 2 ? 0.85 : 0.95;
+      c.fillStyle = `rgba(35, 30, 25, ${crossA})`;
+      c.fillRect(cx - crossW / 2, baseY - h, crossW, h);
+      c.fillRect(cx - crossArmW / 2, crossArmY - crossArmH / 2, crossArmW, crossArmH);
+
+      // Body — emerges from darkness as tier increases
+      if (tier === 1) {
+        c.fillStyle = "rgba(40, 37, 33, 0.6)";
+      } else if (tier === 2) {
+        c.fillStyle = "rgba(95, 88, 78, 0.75)";
+      } else {
+        c.fillStyle = "rgba(216, 211, 200, 0.82)";
+      }
+      // Small round head
+      c.beginPath();
+      c.arc(cx, torsoTop - headR * 0.7, headR, 0, Math.PI * 2);
+      c.fill();
+      // Elongated thin torso
+      c.fillRect(cx - torsoW / 2, torsoTop, torsoW, torsoH);
+      // Very long arms stretched horizontally along cross beam
+      const armSpan = crossArmW * 0.88;
+      c.fillRect(cx - armSpan / 2, crossArmY - armH / 2, armSpan, armH);
+      // Thin legs hanging downward
+      const legTop = torsoTop + torsoH;
+      const legSpacing = torsoW * 0.7;
+      c.fillRect(cx - legSpacing, legTop, legW, legH);
+      c.fillRect(cx + legSpacing - legW, legTop, legW, legH);
+
+      c.restore();
+      c.globalAlpha = 1;
+    };
+
     const draw = (now: number) => {
       const s = stateRef.current;
       ctx.clearRect(0, 0, W, H);
@@ -736,6 +847,20 @@ const Index = () => {
         }
         return;
       }
+      // Ending sequence — black screen with optional typewriter text
+      if (s.transition === "ending_black" || s.transition === "ending_text") {
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, W, H);
+        if (s.transition === "ending_text" && s.transitionText.length > 0) {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "28px monospace";
+          const cursor = Math.floor(now / 400) % 2 === 0 ? "█" : "";
+          const displayText = s.transitionText + cursor;
+          const tw = ctx.measureText(displayText).width;
+          ctx.fillText(displayText, (W - tw) / 2, H / 2);
+        }
+        return;
+      }
 
       // Background
       ctx.fillStyle = "#0a0a12";
@@ -765,32 +890,60 @@ const Index = () => {
       ctx.closePath();
       ctx.fill();
 
-      // --- Martyr Horizon: cruciform silhouettes on the mega-distant ridge ---
+      // --- Martyr Horizon: crucified humanoid silhouettes across 3 terrain tiers ---
+      // Drawn after mega ridge so closer terrain layers naturally occlude lower portions
       {
         const cap = MARTYR_CAPS[s.currentLevel] ?? Infinity;
-        const visibleMartyrs = Math.min(globalMartyrsRef.current, cap);
-        const positions = martyrPositionsRef.current;
-        if (visibleMartyrs > 0) {
-          ctx.fillStyle = "rgba(55, 58, 72, 0.45)";
-          for (let mi = 0; mi < visibleMartyrs; mi++) {
-            const xr = positions[mi] ?? 0.5;
-            const mx = W * xr + megaParallax;
-            const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
-            const tilt = (xr - 0.5) * 4;
-            const ridgeY = megaBaseY + tilt + 80 - 70 * bell
-              + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
-              + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
-            const bodyH = 6;
-            const bodyW = 1.5;
-            const armW = 4;
-            const armH = 1;
-            const headR = 1;
-            const baseY = ridgeY - 1;
-            ctx.fillRect(mx - bodyW / 2, baseY - bodyH, bodyW, bodyH);
-            ctx.fillRect(mx - armW / 2, baseY - bodyH * 0.65, armW, armH);
-            ctx.beginPath();
-            ctx.arc(mx, baseY - bodyH - headR * 0.5, headR, 0, Math.PI * 2);
-            ctx.fill();
+        const allMartyrs = martyrsRef.current;
+        const visibleCount = Math.min(allMartyrs.length, cap);
+
+        if (visibleCount > 0) {
+          // Terrain Y helpers matching each landscape layer
+          const hillParallaxM = Math.sin(now / 80000) * 4;
+          const hillBaseYM = H * 0.41;
+          const farParallaxM = Math.sin(now / 60000) * 10;
+          const horizonYM = H * 0.52;
+
+          // Draw tier 1 first (farthest), then 2, then 3 (closest)
+          for (let ti = 1 as 1 | 2 | 3; ti <= 3; ti++) {
+            for (let mi = 0; mi < visibleCount; mi++) {
+              const m = allMartyrs[mi];
+              if (m.tier !== ti) continue;
+              const xr = m.xRatio;
+              let mx: number, my: number, mh: number;
+
+              if (m.tier === 1) {
+                // On mega-distant ridge
+                const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
+                const tilt = (xr - 0.5) * 4;
+                my = megaBaseY + tilt + 80 - 70 * bell
+                  + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
+                  + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
+                mx = W * xr + megaParallax;
+                mh = 22 + ((xr * 1000) % 8);
+              } else if (m.tier === 2) {
+                // On distant hill
+                const bell = Math.exp(-Math.pow((xr - 0.48) / 0.26, 2));
+                const tilt = (xr - 0.5) * 14;
+                my = hillBaseYM + tilt + 50 - 52 * bell
+                  + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
+                mx = W * xr + hillParallaxM;
+                mh = 60 + ((xr * 1000) % 20);
+              } else {
+                // On far terrain horizon
+                const tilt = (xr - 0.5) * 18;
+                my = horizonYM + tilt
+                  - 30 * Math.sin(xr * Math.PI * 1.2)
+                  - 18 * Math.sin(xr * Math.PI * 2.8 + 0.5)
+                  - 8 * Math.cos(xr * Math.PI * 4.5 + 1.2);
+                mx = W * xr + farParallaxM * 0.2;
+                mh = 120 + ((xr * 1000) % 60);
+              }
+
+              const elapsed = now - m.spawnTime;
+              const animProgress = Math.min(1, elapsed / 700);
+              drawCrucifiedMartyr(ctx, mx, my, mh, m.tier as 1 | 2 | 3, animProgress);
+            }
           }
         }
       }
@@ -1434,10 +1587,13 @@ const Index = () => {
         }
       }
 
-      // HUD
-      ctx.fillStyle = "#aaaaaa";
-      ctx.font = "12px monospace";
-      ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
+      // HUD (hidden during ending sequence)
+      const phase = s.transition as string;
+      if (phase !== "ending_freeze" && phase !== "ending_black" && phase !== "ending_text") {
+        ctx.fillStyle = "#aaaaaa";
+        ctx.font = "12px monospace";
+        ctx.fillText(`Rescued: ${s.rescued} / ${s.totalNpc}`, 8, 14);
+      }
     };
 
     const loop = (time: number) => {

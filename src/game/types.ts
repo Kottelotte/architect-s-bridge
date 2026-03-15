@@ -48,6 +48,9 @@ export type TransitionPhase =
   | "fv_slash"
   | "fv_scream"
   | "fv_static"
+  | "ending_freeze"
+  | "ending_black"
+  | "ending_text"
   | "done";
 
 export interface GameState {
