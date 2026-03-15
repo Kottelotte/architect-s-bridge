@@ -384,9 +384,14 @@ const Index = () => {
           ns.totalNpc = rescued;
           ns.lastTime = s.lastTime;
           Object.assign(s, ns);
+          levelStartMartyrCountRef.current = martyrsRef.current.length;
+          s.transition = "none";
+          s.inputDisabled = false;
+        } else {
+          // Final level completed — ending sequence
+          s.transition = "ending_freeze";
+          s.transitionTimer = 1200;
         }
-        s.transition = "none";
-        s.inputDisabled = false;
       } else if (s.transition === "fail_static" && s.transitionTimer <= 0) {
         s.transition = "fail_typewriter";
         s.transitionTimer = TYPEWRITER_SPEED;
@@ -407,6 +412,8 @@ const Index = () => {
         }
       } else if (s.transition === "fail_static2" && s.transitionTimer <= 0) {
         stopTransitionHum();
+        // Reset martyrs to level-start count (discard failed-run martyrs)
+        martyrsRef.current = martyrsRef.current.slice(0, levelStartMartyrCountRef.current);
         // Reload same level with same survivor count
         const ns = initState(s.currentLevel);
         ns.totalNpc = survivorsRef.current;
