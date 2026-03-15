@@ -937,31 +937,31 @@ const Index = () => {
               let mx: number, my: number, mh: number;
 
               if (m.tier === 1) {
-                // On mega-distant ridge
+                // On mega-distant ridge — single small figure
                 const bell = Math.exp(-Math.pow((xr - 0.45) / 0.25, 2));
                 const tilt = (xr - 0.5) * 4;
                 my = megaBaseY + tilt + 80 - 70 * bell
                   + 10 * Math.sin(xr * Math.PI * 1.4 + 0.3)
                   + 5 * Math.cos(xr * Math.PI * 2.8 + 1.2);
                 mx = W * xr + megaParallax;
-                mh = 22 + ((xr * 1000) % 8);
+                mh = 25 + ((xr * 1000) % 8);
               } else if (m.tier === 2) {
-                // On distant hill
+                // On distant hill — mid-sized
                 const bell = Math.exp(-Math.pow((xr - 0.48) / 0.26, 2));
                 const tilt = (xr - 0.5) * 14;
                 my = hillBaseYM + tilt + 50 - 52 * bell
                   + 4 * Math.sin(xr * Math.PI * 3.0 + 1.2);
                 mx = W * xr + hillParallaxM;
-                mh = 60 + ((xr * 1000) % 20);
+                mh = 75 + ((xr * 1000) % 20);
               } else {
-                // On far terrain horizon
+                // Foreground — large, advancing toward player
                 const tilt = (xr - 0.5) * 18;
-                my = horizonYM + tilt
+                my = horizonYM + tilt + 20
                   - 30 * Math.sin(xr * Math.PI * 1.2)
                   - 18 * Math.sin(xr * Math.PI * 2.8 + 0.5)
                   - 8 * Math.cos(xr * Math.PI * 4.5 + 1.2);
                 mx = W * xr + farParallaxM * 0.2;
-                mh = 120 + ((xr * 1000) % 60);
+                mh = 160 + ((xr * 1000) % 50);
               }
 
               const elapsed = now - m.spawnTime;
