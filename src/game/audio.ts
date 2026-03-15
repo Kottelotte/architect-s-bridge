@@ -449,7 +449,7 @@ export function playGateSlam() {
   revLp.frequency.value = 100;
   revLp.Q.value = 2;
   const revGain = ctx.createGain();
-  revGain.gain.setValueAtTime(0.5, ctx.currentTime);
+  revGain.gain.setValueAtTime(0.85, ctx.currentTime);
   revGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
   revSrc.connect(revLp).connect(revGain).connect(ctx.destination);
   revSrc.start();
