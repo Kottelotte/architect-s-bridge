@@ -5,8 +5,13 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
+// --- Ending mode: mutes all gameplay audio except wind and gate slam ---
+let endingMode = false;
+export function setEndingMode(active: boolean) { endingMode = active; }
+
 // Flesh tear + bone crack destruction sound for false victory
 export function playFleshTear() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.6;
 
@@ -81,6 +86,7 @@ export function playFleshTear() {
 
 // Metallic industrial impact for Architect bridge building (noise-only)
 export function playBuildTick() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.05;
   const bufSize = Math.floor(ctx.sampleRate * dur);
@@ -129,6 +135,7 @@ export function playBuildTick() {
 
 // Heavy mechanical lock sound for Anchor activation
 export function playAnchorClick() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.12;
 
@@ -376,6 +383,7 @@ export function stopAmbientDrone() {
 
 // Deep distant impact for martyr materialization on horizon — LOUD
 export function playMartyrAppear() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 1.5;
 
@@ -404,77 +412,101 @@ export function playMartyrAppear() {
   src.stop(ctx.currentTime + dur);
 }
 
-// Massive stone gate slam for ending sequence — VERY LOUD
+// Massive stone gate slam for ending sequence — VERY LOUD, distinct heavy impact
 export function playGateSlam() {
   const ctx = getCtx();
-  const dur = 1.2;
 
-  // Heavy impact transient — 3x louder
-  const impactLen = Math.floor(ctx.sampleRate * 0.15);
+  // Master gain node: volume=1.0 routed through 3.0x gain
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 3.0;
+  masterGain.connect(ctx.destination);
+
+  // Layer 1: Heavy stone impact transient — sharp dense noise burst
+  const impactDur = 0.18;
+  const impactLen = Math.floor(ctx.sampleRate * impactDur);
   const impactBuf = ctx.createBuffer(1, impactLen, ctx.sampleRate);
   const id = impactBuf.getChannelData(0);
   for (let i = 0; i < impactLen; i++) {
     const t = i / ctx.sampleRate;
-    id[i] = (Math.random() * 2 - 1) * Math.exp(-t * 20) * 0.9;
+    // Dense noise with very sharp attack and fast decay
+    id[i] = (Math.random() * 2 - 1) * Math.exp(-t * 25) * 1.0;
   }
   const impactSrc = ctx.createBufferSource();
   impactSrc.buffer = impactBuf;
   const impactLp = ctx.createBiquadFilter();
   impactLp.type = "lowpass";
-  impactLp.frequency.value = 150;
-  impactLp.Q.value = 4;
-  // Master gain for overall slam volume (3x boost)
-  const masterGain = ctx.createGain();
-  masterGain.gain.value = 3.0;
-  masterGain.connect(ctx.destination);
-
+  impactLp.frequency.value = 180;
+  impactLp.Q.value = 5;
   const impactGain = ctx.createGain();
   impactGain.gain.setValueAtTime(1.0, ctx.currentTime);
-  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + impactDur);
   impactSrc.connect(impactLp).connect(impactGain).connect(masterGain);
   impactSrc.start();
-  impactSrc.stop(ctx.currentTime + 0.25);
+  impactSrc.stop(ctx.currentTime + impactDur);
 
-  // Short low-frequency impact — 60-80 Hz, 120ms, sharp attack
-  const lfLen = Math.floor(ctx.sampleRate * 0.12);
+  // Layer 2: Low-frequency impact — 70 Hz sine, 120ms, sharp attack, no tail
+  const lfDur = 0.12;
+  const lfLen = Math.floor(ctx.sampleRate * lfDur);
   const lfBuf = ctx.createBuffer(1, lfLen, ctx.sampleRate);
   const lfd = lfBuf.getChannelData(0);
   for (let i = 0; i < lfLen; i++) {
     const t = i / ctx.sampleRate;
-    const env = Math.exp(-t * 12);
-    lfd[i] = (Math.sin(t * 70 * Math.PI * 2) * 0.6
-      + Math.sin(t * 55 * Math.PI * 2) * 0.4) * env;
+    const env = Math.exp(-t * 14);
+    lfd[i] = (Math.sin(t * 70 * Math.PI * 2) * 0.7
+      + Math.sin(t * 55 * Math.PI * 2) * 0.3) * env;
   }
   const lfSrc = ctx.createBufferSource();
   lfSrc.buffer = lfBuf;
   const lfGain = ctx.createGain();
   lfGain.gain.setValueAtTime(1.0, ctx.currentTime);
-  lfGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+  lfGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + lfDur);
   lfSrc.connect(lfGain).connect(masterGain);
   lfSrc.start();
-  lfSrc.stop(ctx.currentTime + 0.12);
+  lfSrc.stop(ctx.currentTime + lfDur);
 
-  // Short sub-bass body — no long reverb tail
-  const revLen = Math.floor(ctx.sampleRate * dur);
-  const revBuf = ctx.createBuffer(1, revLen, ctx.sampleRate);
-  const rd = revBuf.getChannelData(0);
-  for (let i = 0; i < revLen; i++) {
+  // Layer 3: Mid-frequency crack — distinct from martyr thud, short percussive hit
+  const crackDur = 0.06;
+  const crackLen = Math.floor(ctx.sampleRate * crackDur);
+  const crackBuf = ctx.createBuffer(1, crackLen, ctx.sampleRate);
+  const cd = crackBuf.getChannelData(0);
+  for (let i = 0; i < crackLen; i++) {
     const t = i / ctx.sampleRate;
-    const env = Math.exp(-t * 3.5); // faster decay — no long tail
-    rd[i] = (Math.sin(t * 28 * Math.PI * 2) * 0.3
-      + Math.sin(t * 42 * Math.PI * 2) * 0.15
-      + Math.sin(t * 18 * Math.PI * 2) * 0.2) * env;
+    cd[i] = (Math.random() * 2 - 1) * Math.exp(-t * 50) * 0.8;
   }
-  const revSrc = ctx.createBufferSource();
-  revSrc.buffer = revBuf;
-  const revLp = ctx.createBiquadFilter();
-  revLp.type = "lowpass";
-  revLp.frequency.value = 100;
-  revLp.Q.value = 2;
-  const revGain = ctx.createGain();
-  revGain.gain.setValueAtTime(1.0, ctx.currentTime);
-  revGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-  revSrc.connect(revLp).connect(revGain).connect(masterGain);
-  revSrc.start();
-  revSrc.stop(ctx.currentTime + dur);
+  const crackSrc = ctx.createBufferSource();
+  crackSrc.buffer = crackBuf;
+  const crackBp = ctx.createBiquadFilter();
+  crackBp.type = "bandpass";
+  crackBp.frequency.value = 350;
+  crackBp.Q.value = 3;
+  const crackGain = ctx.createGain();
+  crackGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  crackGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + crackDur);
+  crackSrc.connect(crackBp).connect(crackGain).connect(masterGain);
+  crackSrc.start();
+  crackSrc.stop(ctx.currentTime + crackDur);
+
+  // Layer 4: Sub-bass body — short decay, no reverb tail
+  const subDur = 0.4;
+  const subLen = Math.floor(ctx.sampleRate * subDur);
+  const subBuf = ctx.createBuffer(1, subLen, ctx.sampleRate);
+  const sd = subBuf.getChannelData(0);
+  for (let i = 0; i < subLen; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 6);
+    sd[i] = (Math.sin(t * 30 * Math.PI * 2) * 0.4
+      + Math.sin(t * 45 * Math.PI * 2) * 0.2) * env;
+  }
+  const subSrc = ctx.createBufferSource();
+  subSrc.buffer = subBuf;
+  const subLp = ctx.createBiquadFilter();
+  subLp.type = "lowpass";
+  subLp.frequency.value = 90;
+  subLp.Q.value = 2;
+  const subGain = ctx.createGain();
+  subGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  subGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + subDur);
+  subSrc.connect(subLp).connect(subGain).connect(masterGain);
+  subSrc.start();
+  subSrc.stop(ctx.currentTime + subDur);
 }
