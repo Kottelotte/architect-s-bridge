@@ -558,6 +558,7 @@ const Index = () => {
             s.transition = "ending_freeze";
             s.transitionTimer = 1000;
             s.inputDisabled = true;
+            setEndingMode(true);
           } else {
             startTransition(s);
           }
