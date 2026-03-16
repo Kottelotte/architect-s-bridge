@@ -797,8 +797,8 @@ const Index = () => {
 
       // Red atmospheric glow behind large martyrs (tier 2 and 3)
       if (tier >= 2) {
-        const glowR = h * (tier === 3 ? 1.68 : 0.98);
-        const glowAlpha = tier === 3 ? 0.33 : 0.16;
+        const glowR = h * (tier === 3 ? 2.35 : 1.37);
+        const glowAlpha = tier === 3 ? 0.43 : 0.21;
         const grad = c.createRadialGradient(cx, baseY - h * 0.5, 0, cx, baseY - h * 0.5, glowR);
         grad.addColorStop(0, `rgba(120, 15, 15, ${glowAlpha})`);
         grad.addColorStop(0.5, `rgba(80, 8, 8, ${glowAlpha * 0.5})`);
