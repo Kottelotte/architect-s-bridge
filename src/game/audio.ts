@@ -450,7 +450,7 @@ export function playGateSlam() {
   const lfGain = ctx.createGain();
   lfGain.gain.setValueAtTime(1.0, ctx.currentTime);
   lfGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-  lfSrc.connect(lfGain).connect(ctx.destination);
+  lfSrc.connect(lfGain).connect(masterGain);
   lfSrc.start();
   lfSrc.stop(ctx.currentTime + 0.12);
 
