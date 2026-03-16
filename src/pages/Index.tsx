@@ -7,7 +7,7 @@ import {
   TOTAL_NPCS, FAIL_MESSAGES, EXCAVATE_DEPTH, EXCAVATE_DELAY,
 } from "../game/constants";
 import { LEVELS, cloneLevelMap } from "../game/levels";
-import { playBuildTick, playAnchorClick, playFleshTear, startTransitionHum, stopTransitionHum, startAmbientDrone, playMartyrAppear, playGateSlam } from "../game/audio";
+import { playBuildTick, playAnchorClick, playFleshTear, startTransitionHum, stopTransitionHum, startAmbientDrone, playMartyrAppear, playGateSlam, setEndingMode } from "../game/audio";
 
 // --- HELPERS ---
 function isSolid(map: number[][], col: number, row: number): boolean {
