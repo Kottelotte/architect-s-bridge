@@ -383,6 +383,7 @@ export function stopAmbientDrone() {
 
 // Deep distant impact for martyr materialization on horizon — LOUD
 export function playMartyrAppear() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 1.5;
 
