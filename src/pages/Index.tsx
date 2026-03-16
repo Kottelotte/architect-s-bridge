@@ -777,10 +777,21 @@ const Index = () => {
       const scale = 0.85 + animProgress * 0.15;
       const drift = (1 - animProgress) * 5;
 
+      // Slight tilt for some Tier 3 martyrs
+      let tiltAngle = 0;
+      if (tier === 3) {
+        // Deterministic pseudo-random based on position
+        const seed = Math.floor(cx * 137 + baseY * 31) % 100;
+        if (seed < 45) { // ~45% of tier 3 martyrs get tilted
+          tiltAngle = ((seed % 17) - 8) * (Math.PI / 180); // -8° to +8°
+        }
+      }
+
       c.save();
       c.globalAlpha = alpha;
       c.translate(cx, baseY);
       c.scale(scale, scale);
+      if (tiltAngle !== 0) c.rotate(tiltAngle);
       c.translate(-cx, -baseY);
       c.translate(0, -drift);
 
