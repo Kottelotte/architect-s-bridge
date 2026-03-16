@@ -404,12 +404,12 @@ export function playMartyrAppear() {
   src.stop(ctx.currentTime + dur);
 }
 
-// Massive stone gate slam for ending sequence
+// Massive stone gate slam for ending sequence — VERY LOUD
 export function playGateSlam() {
   const ctx = getCtx();
-  const dur = 2.0;
+  const dur = 1.2;
 
-  // Heavy impact transient
+  // Heavy impact transient — 3x louder
   const impactLen = Math.floor(ctx.sampleRate * 0.15);
   const impactBuf = ctx.createBuffer(1, impactLen, ctx.sampleRate);
   const id = impactBuf.getChannelData(0);
@@ -424,23 +424,41 @@ export function playGateSlam() {
   impactLp.frequency.value = 150;
   impactLp.Q.value = 4;
   const impactGain = ctx.createGain();
-  impactGain.gain.setValueAtTime(1.0, ctx.currentTime);
-  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+  impactGain.gain.setValueAtTime(1.0, ctx.currentTime); // clamped at 1.0
+  impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
   impactSrc.connect(impactLp).connect(impactGain).connect(ctx.destination);
   impactSrc.start();
-  impactSrc.stop(ctx.currentTime + 0.3);
+  impactSrc.stop(ctx.currentTime + 0.25);
 
-  // Reverberant sub-bass decay
+  // Short low-frequency impact — 60-80 Hz, 120ms, sharp attack
+  const lfLen = Math.floor(ctx.sampleRate * 0.12);
+  const lfBuf = ctx.createBuffer(1, lfLen, ctx.sampleRate);
+  const lfd = lfBuf.getChannelData(0);
+  for (let i = 0; i < lfLen; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 12);
+    lfd[i] = (Math.sin(t * 70 * Math.PI * 2) * 0.6
+      + Math.sin(t * 55 * Math.PI * 2) * 0.4) * env;
+  }
+  const lfSrc = ctx.createBufferSource();
+  lfSrc.buffer = lfBuf;
+  const lfGain = ctx.createGain();
+  lfGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  lfGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+  lfSrc.connect(lfGain).connect(ctx.destination);
+  lfSrc.start();
+  lfSrc.stop(ctx.currentTime + 0.12);
+
+  // Short sub-bass body — no long reverb tail
   const revLen = Math.floor(ctx.sampleRate * dur);
   const revBuf = ctx.createBuffer(1, revLen, ctx.sampleRate);
   const rd = revBuf.getChannelData(0);
   for (let i = 0; i < revLen; i++) {
     const t = i / ctx.sampleRate;
-    const env = Math.exp(-t * 1.5);
+    const env = Math.exp(-t * 3.5); // faster decay — no long tail
     rd[i] = (Math.sin(t * 28 * Math.PI * 2) * 0.3
       + Math.sin(t * 42 * Math.PI * 2) * 0.15
-      + Math.sin(t * 18 * Math.PI * 2) * 0.2) * env
-      + (Math.random() * 2 - 1) * Math.exp(-t * 3) * 0.08;
+      + Math.sin(t * 18 * Math.PI * 2) * 0.2) * env;
   }
   const revSrc = ctx.createBufferSource();
   revSrc.buffer = revBuf;
@@ -449,7 +467,7 @@ export function playGateSlam() {
   revLp.frequency.value = 100;
   revLp.Q.value = 2;
   const revGain = ctx.createGain();
-  revGain.gain.setValueAtTime(0.85, ctx.currentTime);
+  revGain.gain.setValueAtTime(1.0, ctx.currentTime);
   revGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
   revSrc.connect(revLp).connect(revGain).connect(ctx.destination);
   revSrc.start();

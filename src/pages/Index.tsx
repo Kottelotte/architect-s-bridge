@@ -553,6 +553,11 @@ const Index = () => {
           } else if (s.currentLevel === 2 && s.rescued < 6) {
             startTransition(s, true);
             s.failMessage = "NOT ENOUGH.";
+          } else if (s.currentLevel === LEVELS.length - 1) {
+            // Final level — skip transition text, go straight to ending
+            s.transition = "ending_freeze";
+            s.transitionTimer = 1000;
+            s.inputDisabled = true;
           } else {
             startTransition(s);
           }
@@ -772,17 +777,28 @@ const Index = () => {
       const scale = 0.85 + animProgress * 0.15;
       const drift = (1 - animProgress) * 5;
 
+      // Slight tilt for some Tier 3 martyrs
+      let tiltAngle = 0;
+      if (tier === 3) {
+        // Deterministic pseudo-random based on position
+        const seed = Math.floor(cx * 137 + baseY * 31) % 100;
+        if (seed < 45) { // ~45% of tier 3 martyrs get tilted
+          tiltAngle = ((seed % 17) - 8) * (Math.PI / 180); // -8° to +8°
+        }
+      }
+
       c.save();
       c.globalAlpha = alpha;
       c.translate(cx, baseY);
       c.scale(scale, scale);
+      if (tiltAngle !== 0) c.rotate(tiltAngle);
       c.translate(-cx, -baseY);
       c.translate(0, -drift);
 
       // Red atmospheric glow behind large martyrs (tier 2 and 3)
       if (tier >= 2) {
-        const glowR = h * (tier === 3 ? 1.2 : 0.7);
-        const glowAlpha = tier === 3 ? 0.25 : 0.12;
+        const glowR = h * (tier === 3 ? 1.68 : 0.98);
+        const glowAlpha = tier === 3 ? 0.33 : 0.16;
         const grad = c.createRadialGradient(cx, baseY - h * 0.5, 0, cx, baseY - h * 0.5, glowR);
         grad.addColorStop(0, `rgba(120, 15, 15, ${glowAlpha})`);
         grad.addColorStop(0.5, `rgba(80, 8, 8, ${glowAlpha * 0.5})`);
