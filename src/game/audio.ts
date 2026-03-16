@@ -423,10 +423,15 @@ export function playGateSlam() {
   impactLp.type = "lowpass";
   impactLp.frequency.value = 150;
   impactLp.Q.value = 4;
+  // Master gain for overall slam volume (3x boost)
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 3.0;
+  masterGain.connect(ctx.destination);
+
   const impactGain = ctx.createGain();
-  impactGain.gain.setValueAtTime(1.0, ctx.currentTime); // clamped at 1.0
+  impactGain.gain.setValueAtTime(1.0, ctx.currentTime);
   impactGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-  impactSrc.connect(impactLp).connect(impactGain).connect(ctx.destination);
+  impactSrc.connect(impactLp).connect(impactGain).connect(masterGain);
   impactSrc.start();
   impactSrc.stop(ctx.currentTime + 0.25);
 
