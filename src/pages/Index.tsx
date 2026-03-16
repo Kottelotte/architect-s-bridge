@@ -553,6 +553,11 @@ const Index = () => {
           } else if (s.currentLevel === 2 && s.rescued < 6) {
             startTransition(s, true);
             s.failMessage = "NOT ENOUGH.";
+          } else if (s.currentLevel === LEVELS.length - 1) {
+            // Final level — skip transition text, go straight to ending
+            s.transition = "ending_freeze";
+            s.transitionTimer = 1000;
+            s.inputDisabled = true;
           } else {
             startTransition(s);
           }
