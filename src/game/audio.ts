@@ -5,8 +5,13 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
+// --- Ending mode: mutes all gameplay audio except wind and gate slam ---
+let endingMode = false;
+export function setEndingMode(active: boolean) { endingMode = active; }
+
 // Flesh tear + bone crack destruction sound for false victory
 export function playFleshTear() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.6;
 
