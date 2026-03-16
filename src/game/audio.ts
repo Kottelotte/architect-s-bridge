@@ -86,6 +86,7 @@ export function playFleshTear() {
 
 // Metallic industrial impact for Architect bridge building (noise-only)
 export function playBuildTick() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.05;
   const bufSize = Math.floor(ctx.sampleRate * dur);
