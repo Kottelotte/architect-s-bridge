@@ -135,6 +135,7 @@ export function playBuildTick() {
 
 // Heavy mechanical lock sound for Anchor activation
 export function playAnchorClick() {
+  if (endingMode) return;
   const ctx = getCtx();
   const dur = 0.12;
 
